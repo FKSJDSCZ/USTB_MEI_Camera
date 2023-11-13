@@ -12,6 +12,15 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 				Functions::calcDistance(tempBall.cameraPosition_, rsCameraArray[tempBall.cameraId_].parameters_.zeroPointToEncodingDisk_);
 	}
 
+	//删除框内球
+	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+		return detectedBalls_.at(index1).isInBasket_ < detectedBalls_.at(index2).isInBasket_;
+	});
+	while (detectedBalls_.at(pickedBallsIndex_.back()).isInBasket_)
+	{
+		pickedBallsIndex_.pop_back();
+	}
+
 	//按距离排序
 	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
 		if (detectedBalls_.at(index1).labelNum_ == detectedBalls_.at(index2).labelNum_)
@@ -49,9 +58,11 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
 
 		rectangle(img, tempBall, GREEN, 2);
-		putText(img, std::to_string(tempBall.labelNum_) + " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: "
-		             + std::to_string(tempBall.cameraPosition_.y).substr(0, 6) + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6),
-		        Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+//		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
+//		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 }
 

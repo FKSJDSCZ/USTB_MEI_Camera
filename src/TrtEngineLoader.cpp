@@ -121,11 +121,25 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::
 		if (objectness >= minObjectness_)
 		{
 			int label = std::max_element(ptr + 5, ptr + 5 + classNum_) - (ptr + 5);
+			bool isInBasket = false;
+			float centerX = (ptr[0] - offsetX_) / imgRatio_;//减去填充像素
+			float centerY = (ptr[1] - offsetY_) / imgRatio_;
 			float confidence = ptr[label + 5] * objectness;//该物体属于某个标签类别的概率（置信度）
+
+			//判断是否在球框内（7cls）
+			if (classNum_ == 7)
+			{
+				if (label % 2)
+				{
+					label--;
+					isInBasket = true;
+				}
+				label /= 2;
+			}
 
 			if (confidence >= minConfidence_)
 			{
-				Ball ball = Ball((ptr[0] - offsetX_) / imgRatio_, (ptr[1] - offsetY_) / imgRatio_, label, confidence, cameraId);//减去填充像素
+				Ball ball = Ball(centerX, centerY, label, confidence, cameraId, isInBasket);
 				ball.width = ptr[2] / imgRatio_;
 				ball.height = ptr[3] / imgRatio_;
 				ball.x = ball.centerX_ - ball.width * 0.5;

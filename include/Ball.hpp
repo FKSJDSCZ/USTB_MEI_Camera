@@ -10,9 +10,10 @@ class Ball :
 public:
 	float centerX_, centerY_, confidence_, distance_;
 	int labelNum_, cameraId_;
+	bool isInBasket_;
 	Point3f cameraPosition_;
 
-	Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId);
+	Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId, bool isInBasket);
 
 	void toMillimeter();
 

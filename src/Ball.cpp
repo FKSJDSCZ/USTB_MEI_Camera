@@ -1,7 +1,7 @@
 #include "Ball.hpp"
 
-Ball::Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId) :
-		centerX_(centerX), centerY_(centerY), labelNum_(labelNum), confidence_(confidence), cameraId_(cameraId)
+Ball::Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId, bool isInBasket) :
+		centerX_(centerX), centerY_(centerY), labelNum_(labelNum), confidence_(confidence), cameraId_(cameraId), isInBasket_(isInBasket)
 {}
 
 void Ball::toMillimeter()

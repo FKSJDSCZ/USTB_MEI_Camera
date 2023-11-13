@@ -8,9 +8,9 @@
 int main()
 {
 //	DataSender dataSender = DataSender(0);
-	BackDataProcessor backDataProcessor;
+//	BackDataProcessor backDataProcessor;
 	FrontDataProcessor frontDataProcessor;
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-fp16.engine", 0.4, 0.2, 0.4);
+	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.2, 0.4);
 //	RsCameraGroup rsCameraGroup;
 	WideFieldCameraGroup wideFieldCameraGroup;
 
@@ -34,6 +34,8 @@ int main()
 //		frontDataProcessor.outputPosition(dataSender);
 		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
 		frontDataProcessor.clearBallVectors();
+
+//		dataSender.sendData();
 
 		if (waitKey(1) == 27)
 		{

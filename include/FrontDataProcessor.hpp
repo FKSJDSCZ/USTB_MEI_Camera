@@ -16,7 +16,7 @@ private:
 		NEW_BASKET = 4,
 	};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
-	bool success_ = false;
+	bool isFullDetect_ = false;
 
 public:
 	std::vector<Ball> detectedBalls_;

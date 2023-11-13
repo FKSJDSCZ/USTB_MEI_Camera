@@ -14,7 +14,13 @@
 
 ### 更新日志
 
-*
+* **2023/11/10**
+  * 上传四摄像头4cls模型代码
+* **2023/11/14**
+  * Ball添加isInBasket_
+  * BackDataProcessor添加逻辑：删除框内球
+  * FrontDataProcessor修改画图逻辑为：先画所有物体（红色），再画有效物体（绿色）
+  * TrtEngineLoader优化部分变量，添加逻辑：判断模型classNum_，若为7cls模型则对标签索引进行处理
 
 ### 使用说明
 

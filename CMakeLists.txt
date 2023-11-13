@@ -19,7 +19,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # MEI
 include_directories(include)
 file(GLOB SRC_FILES src/*.cpp)
-add_executable(MEI main.cpp)
+add_executable(MEI main.cpp ${SRC_FILES})
 
 target_link_libraries(MEI ${OpenCV_LIBS} realsense2 nvinfer cudart)
 #set_target_properties(MEI PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

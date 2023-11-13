@@ -16,7 +16,7 @@ void FrontDataProcessor::frontDataProcess()
 	//框个数不足，退出
 	if (baskets_.size() < 5)
 	{
-		success_ = false;
+		isFullDetect_ = false;
 		return;
 	}
 
@@ -39,13 +39,13 @@ void FrontDataProcessor::frontDataProcess()
 	//框个数过多，退出
 	if (baskets_.size() > 5)
 	{
-		success_ = false;
+		isFullDetect_ = false;
 		return;
 	}
 
 	//筛选框内球
 	std::cout << "[Info] Successfully detected 5 baskets" << std::endl;
-	success_ = true;
+	isFullDetect_ = true;
 	auto pickedIt = pickedBallsIndex_.begin();
 	std::vector<int> tempIndex;
 	for (Basket &basket: baskets_)
@@ -96,7 +96,7 @@ void FrontDataProcessor::frontDataProcess()
 void FrontDataProcessor::outputPosition(DataSender &dataSender)
 {
 	int data[15];
-	if (success_)
+	if (isFullDetect_)
 	{
 		for (int i = 0; i < 5; ++i)
 		{
@@ -121,6 +121,19 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 //画图
 void FrontDataProcessor::drawBoxes(WideFieldCameraLoader *wideFieldCameraArray)
 {
+	for (int index: pickedBallsIndex_)
+	{
+		Ball &tempBall = detectedBalls_.at(index);
+		Mat &img = wideFieldCameraArray[tempBall.cameraId_].colorImg_;
+
+		rectangle(img, tempBall, RED, 2);
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+//		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
+//		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+	}
+
 	for (Basket &basket: baskets_)
 	{
 		Mat &img = wideFieldCameraArray[basket.cameraId_].colorImg_;
