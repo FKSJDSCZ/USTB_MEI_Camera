@@ -2,17 +2,37 @@
 
 void FrontDataProcessor::frontDataProcess()
 {
+	//该函数涉及vector的erase()方法的多次调用 考虑到前场视野中球数量不会太多 O(n)复杂度不会有较大影响
+	//依据ROBOCON2023比赛规则 III区黄区不会出现球 故不会出现“球框的正后方有球的情况” 因此凭像素坐标+神经网络分离框内外球是可行的
+
 	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
-		return detectedBalls_.at(index1).centerX_ < detectedBalls_.at(index2).centerX_;
-	});
-	//选出框
-	for (int index: pickedBallsIndex_)
-	{
-		if (detectedBalls_.at(index).labelNum_ == 3)
+		Ball &ball1 = detectedBalls_.at(index1);
+		Ball &ball2 = detectedBalls_.at(index2);
+		if (ball1.cameraId_ == ball2.cameraId_)
 		{
-			baskets_.emplace_back(detectedBalls_.at(index));
+			return ball1.centerX_ < ball2.centerX_;
+		}
+		return ball1.cameraId_ < ball2.cameraId_;
+	});
+
+	//选出框 删除非框中球
+	for (auto pickedIt = pickedBallsIndex_.begin(); pickedIt != pickedBallsIndex_.end();)
+	{
+		if (detectedBalls_.at(*(pickedIt)).labelNum_ == 3)
+		{
+			baskets_.emplace_back(detectedBalls_.at(*(pickedIt)));
+			pickedBallsIndex_.erase(pickedIt);
+		}
+		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
+		{
+			pickedBallsIndex_.erase(pickedIt);
+		}
+		else
+		{
+			pickedIt++;
 		}
 	}
+
 	//框个数不足，退出
 	if (baskets_.size() < 5)
 	{
@@ -20,13 +40,31 @@ void FrontDataProcessor::frontDataProcess()
 		return;
 	}
 
-	std::sort(baskets_.begin(), baskets_.end(), [](Basket &basket1, Basket &basket2) -> bool {
-		if (basket1.cameraId_ == basket2.cameraId_)
+	std::cout << "[Info] Successfully detected 5 baskets" << std::endl;
+	isFullDetect_ = true;
+	//筛选框内球
+	auto pickedIt = pickedBallsIndex_.begin();
+	for (Basket &basket: baskets_)
+	{
+		//横向筛选 由于使用神经网络 不需要纵向筛选
+		for (; pickedIt != pickedBallsIndex_.end(); ++pickedIt)
 		{
-			return basket1.centerX_ < basket2.centerX_;
+			Ball &tempBall = detectedBalls_.at(*(pickedIt));
+			if (basket.cameraId_ == tempBall.cameraId_ && tempBall.centerX_ > basket.x && tempBall.centerX_ < basket.x + basket.width)
+			{
+				basket.containedBalls_.emplace_back(*(pickedIt));
+			}
+			else
+			{
+				break;
+			}
 		}
-		return basket1.cameraId_ < basket2.cameraId_;
-	});
+		//高度升序（y降序）排序
+		std::sort(basket.containedBalls_.begin(), basket.containedBalls_.end(), [this](int index1, int index2) -> bool {
+			return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
+		});
+	}
+
 	//去重
 	for (auto it = baskets_.begin(); it != baskets_.end(); ++it)
 	{
@@ -36,60 +74,12 @@ void FrontDataProcessor::frontDataProcess()
 			break;
 		}
 	}
+
 	//框个数过多，退出
 	if (baskets_.size() > 5)
 	{
 		isFullDetect_ = false;
 		return;
-	}
-
-	//筛选框内球
-	std::cout << "[Info] Successfully detected 5 baskets" << std::endl;
-	isFullDetect_ = true;
-	auto pickedIt = pickedBallsIndex_.begin();
-	std::vector<int> tempIndex;
-	for (Basket &basket: baskets_)
-	{
-		tempIndex.clear();
-		//横向筛选
-		while (pickedIt != pickedBallsIndex_.end())
-		{
-			Ball &tempBall = detectedBalls_.at(*(pickedIt));
-			if (tempBall.centerX_ > basket.x)
-			{
-				if (tempBall.centerX_ < basket.x + basket.width)
-				{
-					tempIndex.emplace_back(*(pickedIt));
-				}
-				else
-				{
-					break;
-				}
-			}
-			pickedIt++;
-		}
-		//高度升序（y降序）排序
-		std::sort(tempIndex.begin(), tempIndex.end(), [this](int index1, int index2) -> bool {
-			return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
-		});
-		//纵向筛选
-		auto tempIt = tempIndex.begin();
-		while (tempIt != tempIndex.end())
-		{
-			Ball &tempBall = detectedBalls_.at(*(tempIt));
-			if (tempBall.centerY_ < basket.y + basket.height)
-			{
-				if (tempBall.centerY_ > basket.y - basket.height * 0.5 && basket.containedBalls_.size() < 3)
-				{
-					basket.containedBalls_.emplace_back(*(tempIt));
-				}
-				else
-				{
-					break;
-				}
-			}
-			tempIt++;
-		}
 	}
 }
 
@@ -115,6 +105,15 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 	{
 		std::fill(data, data + 15, 3);
 	}
+
+//	for (int i = 2; i >= 0; --i)
+//	{
+//		for (int j = 0; j < 5; ++j)
+//		{
+//			std::cout << data[5 * i + j] << " ";
+//		}
+//		std::cout << std::endl;
+//	}
 	dataSender.writeToBuffer(4, 15, data);
 }
 

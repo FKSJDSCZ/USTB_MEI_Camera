@@ -16,7 +16,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
 		return detectedBalls_.at(index1).isInBasket_ < detectedBalls_.at(index2).isInBasket_;
 	});
-	while (detectedBalls_.at(pickedBallsIndex_.back()).isInBasket_)
+	while (!pickedBallsIndex_.empty() && detectedBalls_.at(pickedBallsIndex_.back()).isInBasket_)
 	{
 		pickedBallsIndex_.pop_back();
 	}
