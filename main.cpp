@@ -7,10 +7,14 @@
 
 int main()
 {
-//	DataSender dataSender = DataSender(0);
+	//standard output for debug only
+	std::ios::sync_with_stdio(false);
+	std::cout.tie(nullptr);
+
+	DataSender dataSender = DataSender(0);
 	BackDataProcessor backDataProcessor;
-//	FrontDataProcessor frontDataProcessor;
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.3, 0.4);
+	FrontDataProcessor frontDataProcessor;
+	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.4, 0.4);
 	RsCameraGroup rsCameraGroup;
 //	WideFieldCameraGroup wideFieldCameraGroup;
 
@@ -23,17 +27,22 @@ int main()
 	{
 		rsCameraGroup.groupGetImg();
 		rsCameraGroup.groupInfer(trtEngineLoader, backDataProcessor);
+
+		//to be deprecated
+		frontDataProcessor.detectedBalls_ = backDataProcessor.detectedBalls_;
+		frontDataProcessor.pickedBallsIndex_ = backDataProcessor.pickedBallsIndex_;
+
 		rsCameraGroup.groupDataProcess(backDataProcessor);
-//		backDataProcessor.outputPosition(dataSender);
+		backDataProcessor.outputPosition(dataSender);
 		rsCameraGroup.groupDrawBoxes(backDataProcessor);
 		backDataProcessor.clearBallVectors();
 
 //		wideFieldCameraGroup.groupGetImg();
 //		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
-//		frontDataProcessor.frontDataProcess();
-////		frontDataProcessor.outputPosition(dataSender);
+		frontDataProcessor.frontDataProcess();
+		frontDataProcessor.outputPosition(dataSender);
 //		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
-//		frontDataProcessor.clearBallVectors();
+		frontDataProcessor.clearBallVectors();
 
 //		dataSender.sendData();
 

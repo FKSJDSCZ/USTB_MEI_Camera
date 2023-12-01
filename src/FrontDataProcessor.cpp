@@ -106,14 +106,16 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 		std::fill(data, data + 15, 3);
 	}
 
-//	for (int i = 2; i >= 0; --i)
-//	{
-//		for (int j = 0; j < 5; ++j)
-//		{
-//			std::cout << data[5 * i + j] << " ";
-//		}
-//		std::cout << std::endl;
-//	}
+	//输出框中球的状态
+	for (int i = 2; i >= 0; --i)
+	{
+		std::cout << "[Info] " << "[Baskets Row " << std::to_string(i) << "] ";
+		for (int j = 0; j < 5; ++j)
+		{
+			std::cout << data[5 * i + j] << " ";
+		}
+		std::cout << std::endl;
+	}
 	dataSender.writeToBuffer(4, 15, data);
 }
 

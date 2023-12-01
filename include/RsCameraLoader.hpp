@@ -11,9 +11,26 @@ private:
 	int imgWidth_;
 	int imgHeight_;
 	int framerate_;
-	float pitchAngleDegree_;
+	float pixelOffset_[5][2] = {{0,  0},
+	                            {0,  3},
+	                            {0,  -3},
+	                            {3,  0},
+	                            {-3, 0}};//深度采样的像素坐标偏移量
+	float pitchAngleDegree_;//俯角相反数
+	float yawAngleDegree_;
 	bool pipeStarted_ = false;
-	Mat_<float> rotateMatrix_ = Mat_<float>(3, 3);
+	/*
+	 * ⌈    1,      0,       0      ⌉
+	 * |    0,  cos(θ), -sin(θ) |
+	 * ⌊    0,  sin(θ), cos(θ)  ⌋
+	 */
+	Mat_<float> pitchRotateMatrix_ = Mat_<float>(3, 3);
+	/*
+	 * ⌈        0,  cos(θ),   -sin(θ)   ⌉
+	 * |        0,          1,          0    |
+	 * ⌊-sin(θ),          0,    cos(θ)  ⌋
+	 */
+	Mat_<float> yawRotateMatrix_ = Mat_<float>(3, 3);
 	rs2::context context_;
 	rs2::device_list deviceList_;
 	rs2::config config_;
@@ -27,7 +44,7 @@ public:
 
 	RsCameraLoader();
 
-	RsCameraLoader(int imgWidth, int imgHeight, int framerate, float rotateDegree, Parameters parameters);
+	RsCameraLoader(int imgWidth, int imgHeight, int framerate, float pitchAngleDegree, float yawAngleDegree, Parameters parameters);
 
 	~RsCameraLoader();
 

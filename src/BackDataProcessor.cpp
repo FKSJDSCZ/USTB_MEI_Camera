@@ -38,8 +38,23 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 	{
 		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
 		Point3i cameraPosition = tempBall.cameraPosition_;
+		int labelNum = tempBall.labelNum_;
 
-		int data[4] = {cameraPosition.x, cameraPosition.y, cameraPosition.z, newLabelNum_[tempBall.labelNum_]};
+		//to be deprecated
+		//对于r2-gen1 当机械爪将球举起时 由于距离过近深度坐标为(0, 0, 0) 获得的相对码盘的坐标即为预设偏移量
+		//此处特判球被举起（高度值突变为offsetToEncodingDiskY_）的情况
+		for (int index: pickedBallsIndex_)
+		{
+			tempBall = detectedBalls_.at(index);
+			if (std::abs(tempBall.cameraPosition_.y) >= 600)
+			{
+				cameraPosition = detectedBalls_.at(index).cameraPosition_;
+				labelNum = tempBall.labelNum_;
+				break;
+			}
+		}
+
+		int data[4] = {cameraPosition.x, cameraPosition.y, cameraPosition.z, newLabelNum_[labelNum]};
 		dataSender.writeToBuffer(0, 4, data);
 	}
 	else
@@ -58,10 +73,10 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
 
 		rectangle(img, tempBall, GREEN, 2);
-		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
-//		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
-//		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
-//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G") + " x: "
+		                                                + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: "
+		                                                + std::to_string(tempBall.cameraPosition_.y).substr(0, 6) + " z: "
+		                                                + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
 				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 }

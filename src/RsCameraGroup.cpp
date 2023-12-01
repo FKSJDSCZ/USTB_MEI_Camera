@@ -27,7 +27,7 @@ void RsCameraGroup::groupInit()
 		{
 			cameraId = 1;
 		}
-		rsCamerasArray_[cameraId] = RsCameraLoader(640, 480, 30, pitchAngleDegrees_[cameraId], parameters_[cameraId]);
+		rsCamerasArray_[cameraId] = RsCameraLoader(640, 480, 30, pitchAngleDegrees_[cameraId], yawAngleDegrees_[cameraId], parameters_[cameraId]);
 		rsCamerasArray_[cameraId].init(serialNumber);
 		enabled_[cameraId] = true;
 

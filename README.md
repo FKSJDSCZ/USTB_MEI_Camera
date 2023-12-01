@@ -24,6 +24,10 @@
 * **2023/11/15**
   * BackDataProcessor修改错误：判断pickedBallsIndex_是否为空
   * FrontDataProcessor修改frontDataProcess的逻辑错误，简化逻辑
+* **2023/12/2**
+  * RsCameraGroup修改r2-gen1下方摄像头到码盘偏移量
+  * RsCameraLoader添加偏航角，添加逻辑：获取深度坐标时邻近采样防止深度“黑洞”
+  * BackDataProcessor添加逻辑：特判球被举起的情况
 
 ## 使用说明
 
