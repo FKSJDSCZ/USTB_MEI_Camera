@@ -28,6 +28,11 @@
   * RsCameraGroup修改r2-gen1下方摄像头到码盘偏移量
   * RsCameraLoader添加偏航角，添加逻辑：获取深度坐标时邻近采样防止深度“黑洞”
   * BackDataProcessor添加逻辑：特判球被举起的情况
+* **2023/12/12**
+  * TrtEngineLoader代码格式优化
+  * 添加r2-gen1-ov分支
+  * 添加OvEngineLoader类，实现基于OpenVINO库调用Intel CPU/GPU进行推理的功能
+  * RsCameraGroup与WideFieldCameraGroup添加OvEngineLoader相关重载函数
 
 ## 使用说明
 

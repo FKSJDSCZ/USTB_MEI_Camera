@@ -1,30 +1,18 @@
 #include "TrtEngineLoader.hpp"
 
-TrtEngineLoader::TrtEngineLoader(std::string enginePath, float minObjectness, float minConfidence, float maxIou) :
-		enginePath_(enginePath), minObjectness_(minObjectness), minConfidence_(minConfidence), maxIou_(maxIou)
+TrtEngineLoader::TrtEngineLoader(std::string enginePath, float minObjectness = 0.4, float minConfidence = 0.5, float maxIou = 0.4) :
+		minObjectness_(minObjectness), minConfidence_(minConfidence), maxIou_(maxIou)
 {
-	loadEngine();
+	inputWidth_ = 640;
+	inputHeight_ = 640;
+	outputSize_ = 1;
+
+	loadEngine(enginePath);
 	initBuffers();
 }
 
-//获取网络输出层结构
-void TrtEngineLoader::setOutputSize()
-{
-	auto out_dims = meiCudaEngine_->getBindingDimensions(1);
-	for (int j = 0; j < out_dims.nbDims; j++)
-	{
-		//以YOLOv5为例，输出1*25200*85
-		//其中1为batch_size，25200为先验框数量，85为：4（先验框参数，即centerX,centerY,width,height）+1（objectness，即boxConf）+80（classNum，即clsConf）
-		std::cout << "[Info] Output dim" << j << ": size = " << out_dims.d[j] << std::endl;
-		outputSize_ *= out_dims.d[j];
-	}
-	batchSize_ = out_dims.d[0];
-	outputMaxNum_ = out_dims.d[1];
-	classNum_ = out_dims.d[2] - 5;
-}
-
 // 读取模型，反序列化成engine
-void TrtEngineLoader::loadEngine()
+void TrtEngineLoader::loadEngine(std::string &enginePath_)
 {
 	char *modelStream{nullptr};
 
@@ -48,6 +36,22 @@ void TrtEngineLoader::loadEngine()
 	assert(meiExecutionContext_ != nullptr);
 
 	delete[] modelStream;
+}
+
+//获取网络输出层结构
+void TrtEngineLoader::setOutputSize()
+{
+	auto out_dims = meiCudaEngine_->getBindingDimensions(1);
+	for (int j = 0; j < out_dims.nbDims; j++)
+	{
+		//以YOLOv5为例，输出1*25200*85
+		//其中1为batch_size，25200为先验框数量，85为：4（先验框参数，即centerX,centerY,width,height）+1（objectness，即boxConf）+80（classNum，即clsConf）
+		std::cout << "[Info] Output dim" << j << ": size = " << out_dims.d[j] << std::endl;
+		outputSize_ *= out_dims.d[j];
+	}
+	batchSize_ = out_dims.d[0];
+	outputMaxNum_ = out_dims.d[1];
+	classNum_ = out_dims.d[2] - 5;
 }
 
 //分配相关内存

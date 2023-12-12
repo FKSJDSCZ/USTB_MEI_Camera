@@ -16,15 +16,14 @@ private:
 	nvinfer1::IExecutionContext *meiExecutionContext_ = nullptr;
 	void *gpuBuffers_[2];
 	float *cpuOutputBuffer_;
-	std::string enginePath_;
-	int inputHeight_ = 640;
-	int inputWidth_ = 640;
+	int inputHeight_;
+	int inputWidth_;
 	int offsetX_;
 	int offsetY_;
 	int batchSize_;
 	int classNum_;
 	int inputSize_;
-	int outputSize_ = 1;
+	int outputSize_;
 	float imgRatio_;
 	float *inputBlob_;
 	int outputMaxNum_;
@@ -33,19 +32,19 @@ private:
 	float maxIou_;
 	cudaStream_t meiCudaStream_;
 
+	// 读取模型，反序列化成engine
+	void loadEngine(std::string &enginePath);
+
 	//获取网络输出层结构
 	void setOutputSize();
 
-public:
-	explicit TrtEngineLoader(std::string enginePath, float minObjectness = 0.5, float minConfidence = 0.6, float maxIou = 0.5);
-
-	~TrtEngineLoader();
-
-	// 读取模型，反序列化成engine
-	void loadEngine();
-
 	//分配相关内存
 	void initBuffers();
+
+public:
+	explicit TrtEngineLoader(std::string enginePath, float minObjectness, float minConfidence, float maxIou);
+
+	~TrtEngineLoader();
 
 	//图像预处理
 	void imgProcess(Mat inputImg);
