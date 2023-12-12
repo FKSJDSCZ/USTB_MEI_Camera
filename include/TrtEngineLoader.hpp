@@ -1,5 +1,7 @@
 #pragma once
 
+#if defined(WITH_CUDA)
+
 #include <fstream>
 #include "Ball.hpp"
 #include "Functions.hpp"
@@ -55,3 +57,5 @@ public:
 	//后处理推理数据
 	void detectDataProcess(std::vector<Ball> &detectedBalls_, std::vector<int> &pickedBallsIndex_, int cameraId);
 };
+
+#endif

@@ -65,6 +65,7 @@ void WideFieldCameraGroup::groupGetImg()
 	}
 }
 
+#if defined(WITH_CUDA)
 void WideFieldCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, FrontDataProcessor &frontDataProcessor)
 {
 	for (int i = 0; i < 2; ++i)
@@ -77,6 +78,22 @@ void WideFieldCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, FrontDat
 		}
 	}
 }
+#elif defined(WITH_OPENVINO)
+
+void WideFieldCameraGroup::groupInfer(OvEngineLoader &ovEngineLoader, FrontDataProcessor &frontDataProcessor)
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (enabled_[i])
+		{
+			ovEngineLoader.imgProcess(wideFieldCameraArray_[i].colorImg_);
+			ovEngineLoader.infer();
+			ovEngineLoader.detectDataProcess(frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, i);
+		}
+	}
+}
+
+#endif
 
 void WideFieldCameraGroup::groupDrawBoxes(FrontDataProcessor &frontDataProcessor)
 {

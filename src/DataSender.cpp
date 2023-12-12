@@ -2,7 +2,7 @@
 
 DataSender::DataSender(int devIndex)
 {
-	portInit(devIndex);
+//	portInit(devIndex);
 }
 
 void DataSender::portInit(int devIndex)

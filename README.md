@@ -30,9 +30,9 @@
   * BackDataProcessor添加逻辑：特判球被举起的情况
 * **2023/12/12**
   * TrtEngineLoader代码格式优化
-  * 添加r2-gen1-ov分支
   * 添加OvEngineLoader类，实现基于OpenVINO库调用Intel CPU/GPU进行推理的功能
   * RsCameraGroup与WideFieldCameraGroup添加OvEngineLoader相关重载函数
+  * 宏定义优化
 
 ## 使用说明
 

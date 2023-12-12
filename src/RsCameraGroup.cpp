@@ -46,6 +46,7 @@ void RsCameraGroup::groupGetImg()
 	}
 }
 
+#if defined(WITH_CUDA)
 void RsCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, BackDataProcessor &backDataProcessor)
 {
 	for (int i = 0; i < 2; ++i)
@@ -58,6 +59,22 @@ void RsCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, BackDataProcess
 		}
 	}
 }
+#elif defined(WITH_OPENVINO)
+
+void RsCameraGroup::groupInfer(OvEngineLoader &ovEngineLoader, BackDataProcessor &backDataProcessor)
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (enabled_[i])
+		{
+			ovEngineLoader.imgProcess(rsCamerasArray_[i].colorImg_);
+			ovEngineLoader.infer();
+			ovEngineLoader.detectDataProcess(backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
+		}
+	}
+}
+
+#endif
 
 void RsCameraGroup::groupDataProcess(BackDataProcessor &backDataProcessor)
 {

@@ -1,3 +1,5 @@
+#if defined(WITH_CUDA)
+
 #include "TrtEngineLoader.hpp"
 
 TrtEngineLoader::TrtEngineLoader(std::string enginePath, float minObjectness = 0.4, float minConfidence = 0.5, float maxIou = 0.4) :
@@ -185,3 +187,5 @@ TrtEngineLoader::~TrtEngineLoader()
 	delete meiCudaEngine_;
 	delete meiRuntime_;
 }
+
+#endif

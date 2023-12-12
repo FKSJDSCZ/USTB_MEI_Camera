@@ -3,11 +3,8 @@ project(MEI)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# cuda & cudnn
-include_directories(/usr/local/cuda/include)
-
-# tensorrt
-include_directories(/home/ywh/TensorRT-8.6.1.6/include)
+set(WITH_CUDA OFF)
+set(WITH_OPENVINO ON)
 
 # realsense
 include_directories(/usr/include)
@@ -16,10 +13,46 @@ include_directories(/usr/include)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+if (WITH_CUDA)
+    # cuda & cudnn
+    include_directories(/usr/local/cuda/include)
+    # tensorrt
+    include_directories(/home/ywh/TensorRT-8.6.1.6/include)
+    # add definition
+    add_definitions(-DWITH_CUDA)
+    message("using cuda and tensorrt")
+elseif (WITH_OPENVINO)
+    # openvino
+    set(OpenVINO_DIR /home/ywh/openvino/runtime/cmake)
+    find_package(OpenVINO REQUIRED)
+    include_directories(/home/ywh/openvino/runtime/include)
+    # add definition
+    add_definitions(-DWITH_OPENVINO)
+    message("using openvino")
+else ()
+    message(FATAL_ERROR "No cuda libs or openvino libs was found")
+endif ()
+
 # MEI
 include_directories(include)
 file(GLOB SRC_FILES src/*.cpp)
-add_executable(MEI main.cpp ${SRC_FILES})
+add_executable(${PROJECT_NAME}
+        ${SRC_FILES}
+        main.cpp
+)
 
-target_link_libraries(MEI ${OpenCV_LIBS} realsense2 nvinfer cudart)
-#set_target_properties(MEI PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(${PROJECT_NAME}
+        ${OpenCV_LIBS}
+        realsense2
+)
+
+if (WITH_CUDA)
+    target_link_libraries(${PROJECT_NAME}
+            cudart
+            nvinfer
+    )
+elseif (WITH_OPENVINO)
+    target_link_libraries(${PROJECT_NAME}
+            openvino::runtime
+    )
+endif ()

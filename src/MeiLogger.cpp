@@ -1,3 +1,5 @@
+#if defined(WITH_CUDA)
+
 #include "MeiLogger.hpp"
 
 MeiLogger::MeiLogger(ILogger::Severity severity) : severity_(severity)
@@ -10,3 +12,5 @@ void MeiLogger::log(ILogger::Severity severity, const char *msg) noexcept
 		std::cerr << msg << std::endl;
 	}
 }
+
+#endif

@@ -1,7 +1,16 @@
 #pragma once
 
 #include "RsCameraLoader.hpp"
+
+#if defined(WITH_CUDA)
+
 #include "TrtEngineLoader.hpp"
+#elif defined(WITH_OPENVINO)
+
+#include "OvEngineLoader.hpp"
+
+#endif
+
 #include "BackDataProcessor.hpp"
 
 class RsCameraGroup
@@ -24,7 +33,13 @@ public:
 
 	void groupGetImg();
 
+#if defined(WITH_CUDA)
 	void groupInfer(TrtEngineLoader &trtEngineLoader, BackDataProcessor &backDataProcessor);
+#elif defined(WITH_OPENVINO)
+
+	void groupInfer(OvEngineLoader &ovEngineLoader, BackDataProcessor &backDataProcessor);
+
+#endif
 
 	void groupDataProcess(BackDataProcessor &backDataProcessor);
 

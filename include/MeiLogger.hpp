@@ -1,5 +1,7 @@
 #pragma once
 
+#if defined(WITH_CUDA)
+
 #include <iostream>
 #include "NvInferRuntime.h"
 
@@ -15,3 +17,5 @@ public:
 };
 
 static MeiLogger meiLogger;
+
+#endif
