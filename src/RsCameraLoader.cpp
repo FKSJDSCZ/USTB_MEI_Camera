@@ -49,9 +49,9 @@ void RsCameraLoader::getCameraPosition(float centerX, float centerY, Point3f &ca
 
 	//邻近采样防止深度黑洞
 	float position[3];
-	for (auto &i: pixelOffset_)
+	for (auto &offset: pixelOffset_)
 	{
-		float point[2] = {centerX + i[0], centerY + i[1]};
+		float point[2] = {centerX + offset[0], centerY + offset[1]};
 		if (point[0] >= 0 && point[0] < colorImg_.cols && point[1] >= 0 && point[1] < colorImg_.rows)
 		{
 			float depthValue = depthFrame.get_distance(point[0], point[1]);

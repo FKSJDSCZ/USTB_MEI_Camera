@@ -8,8 +8,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		rsCameraArray[tempBall.cameraId_].getCameraPosition(tempBall.centerX_, tempBall.centerY_, tempBall.cameraPosition_);
 		tempBall.toMillimeter();//转毫米
 		tempBall.offsetToEncodingDisk(rsCameraArray[tempBall.cameraId_].parameters_);//偏移到码盘
-		tempBall.distance_ =
-				Functions::calcDistance(tempBall.cameraPosition_, rsCameraArray[tempBall.cameraId_].parameters_.zeroPointToEncodingDisk_);
+		tempBall.distance_ = Functions::calcDistance(tempBall.cameraPosition_, Point3f(0, 0, 0));
 	}
 
 	//删除框内球
