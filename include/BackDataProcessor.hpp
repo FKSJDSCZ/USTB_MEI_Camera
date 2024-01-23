@@ -23,12 +23,20 @@ private:
 		NEW_BLUE_BALL = 2,
 		NEW_BASKET = 3,
 	};
+	enum DetectMode
+	{
+		MULTIPLE_BALLS = 0,
+		SINGLE_BALL = 1
+	};
+
 	int ballPriority_[4] = {RED_BALL, BLUE_BALL, PURPLE_BALL, BASKET};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
+	int detectMode_ = SINGLE_BALL;
 
 public:
 	std::vector<Ball> detectedBalls_;
 	std::vector<int> pickedBallsIndex_;
+	std::vector<int> selectedBallsIndex_;
 
 	void backDataProcess(RsCameraLoader *rsCameraArray);
 
@@ -38,5 +46,6 @@ public:
 	//画图
 	void drawBoxes(RsCameraLoader *rsCameraArray);
 
-	void clearBallVectors();
+	//重置处理器
+	void resetProcessor();
 };

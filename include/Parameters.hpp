@@ -10,7 +10,7 @@ public:
 	float offsetToEncodingDiskX_;
 	float offsetToEncodingDiskY_;
 	float offsetToEncodingDiskZ_;
-	Point3f zeroPointToEncodingDisk_;
+	Point3f offsetPoint;
 
 	Parameters();
 

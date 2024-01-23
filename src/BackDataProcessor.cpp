@@ -8,8 +8,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		rsCameraArray[tempBall.cameraId_].getCameraPosition(tempBall.centerX_, tempBall.centerY_, tempBall.cameraPosition_);
 		tempBall.toMillimeter();//转毫米
 		tempBall.offsetToEncodingDisk(rsCameraArray[tempBall.cameraId_].parameters_);//偏移到码盘
-		tempBall.distance_ =
-				Functions::calcDistance(tempBall.cameraPosition_, rsCameraArray[tempBall.cameraId_].parameters_.zeroPointToEncodingDisk_);
+		tempBall.distance_ = Functions::calcDistance(tempBall.cameraPosition_, Point3f(0, 0, 0));
 	}
 
 	//删除框内球
@@ -21,47 +20,114 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		pickedBallsIndex_.pop_back();
 	}
 
-	//按距离排序
-	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
-		if (detectedBalls_.at(index1).labelNum_ == detectedBalls_.at(index2).labelNum_)
+	//筛选已经被吸起的球
+	for (int index: pickedBallsIndex_)
+	{
+		Ball &tempBall = detectedBalls_.at(index);
+		if (tempBall.cameraPosition_ == rsCameraArray[tempBall.cameraId_].parameters_.offsetPoint)//说明超出量程（<40cm）
 		{
-			return detectedBalls_.at(index1).distance_ < detectedBalls_.at(index2).distance_;
+			selectedBallsIndex_.push_back(index);
 		}
-		return ballPriority_[detectedBalls_.at(index1).labelNum_] < ballPriority_[detectedBalls_.at(index2).labelNum_];
+	}
+	if (!selectedBallsIndex_.empty())
+	{
+		std::sort(selectedBallsIndex_.begin(), selectedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+			return detectedBalls_.at(index1).centerX_ < detectedBalls_.at(index2).centerX_;
+		});
+		detectMode_ = MULTIPLE_BALLS;
+		return;
+	}
+
+	//筛选成排的球
+	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+		return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
 	});
+	//直线判定
+	for (int index: pickedBallsIndex_)
+	{
+		Ball &tempBall = detectedBalls_.at(index);
+		if (selectedBallsIndex_.empty())
+		{
+			selectedBallsIndex_.push_back(index);
+		}
+		else
+		{
+			if (std::abs(tempBall.cameraPosition_.z - detectedBalls_.at(selectedBallsIndex_.back()).cameraPosition_.z) <= RADIUS / 2)
+			{
+				selectedBallsIndex_.push_back(index);
+			}
+			else
+			{
+				break;
+			}
+		}
+		if (selectedBallsIndex_.size() == 4)
+		{
+			std::sort(selectedBallsIndex_.begin(), selectedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+				return detectedBalls_.at(index1).centerX_ < detectedBalls_.at(index2).centerX_;
+			});
+			for (int i = 0; i <= 2; ++i)
+			{
+				Ball &tempBall1 = detectedBalls_.at(selectedBallsIndex_.at(i));
+				Ball &tempBall2 = detectedBalls_.at(selectedBallsIndex_.at(i + 1));
+				if (tempBall2.cameraPosition_.x - tempBall1.cameraPosition_.x > RADIUS / 2)
+				{
+					detectMode_ = SINGLE_BALL;
+					break;
+				}
+			}
+			detectMode_ = MULTIPLE_BALLS;
+		}
+	}
+
+	//对选择结果进行判断
+	if (detectMode_ == SINGLE_BALL)
+	{
+		selectedBallsIndex_.clear();
+		if (!pickedBallsIndex_.empty())
+		{
+			std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+				Ball &tempBall1 = detectedBalls_.at(index1);
+				Ball &tempBall2 = detectedBalls_.at(index2);
+				if (ballPriority_[tempBall1.labelNum_] == ballPriority_[tempBall2.labelNum_])
+				{
+					return detectedBalls_.at(index1).distance_ < detectedBalls_.at(index2).distance_;
+				}
+				return ballPriority_[tempBall1.labelNum_] < ballPriority_[tempBall2.labelNum_];
+			});
+			selectedBallsIndex_.push_back(pickedBallsIndex_.at(0));
+		}
+	}
 }
 
 //数据输出
 void BackDataProcessor::outputPosition(DataSender &dataSender)
 {
-	if (!pickedBallsIndex_.empty())
+	int data[17] = {0};
+	data[0] = detectMode_;
+	if (detectMode_ == SINGLE_BALL)
 	{
-		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
-		Point3i cameraPosition = tempBall.cameraPosition_;
-		int labelNum = tempBall.labelNum_;
-
-		//to be deprecated
-		//对于r2-gen1 当机械爪将球举起时 由于距离过近深度坐标为(0, 0, 0) 获得的相对码盘的坐标即为预设偏移量
-		//此处特判球被举起（高度值突变为offsetToEncodingDiskY_）的情况
-		for (int index: pickedBallsIndex_)
+		if (!selectedBallsIndex_.empty())
 		{
-			tempBall = detectedBalls_.at(index);
-			if (std::abs(tempBall.cameraPosition_.y) >= 600)
-			{
-				cameraPosition = detectedBalls_.at(index).cameraPosition_;
-				labelNum = tempBall.labelNum_;
-				break;
-			}
+			Ball &tempBall = detectedBalls_.at(selectedBallsIndex_.at(0));
+			data[1] = tempBall.cameraPosition_.x;
+			data[2] = tempBall.cameraPosition_.y;
+			data[3] = tempBall.cameraPosition_.z;
+			data[4] = newLabelNum_[tempBall.labelNum_];
 		}
-
-		int data[4] = {cameraPosition.x, cameraPosition.y, cameraPosition.z, newLabelNum_[labelNum]};
-		dataSender.writeToBuffer(0, 4, data);
 	}
 	else
 	{
-		int data[4] = {0};
-		dataSender.writeToBuffer(0, 4, data);
+		for (int i = 0; i < selectedBallsIndex_.size(); ++i)
+		{
+			Ball &tempBall = detectedBalls_.at(selectedBallsIndex_.at(i));
+			data[4 * i + 1] = tempBall.cameraPosition_.x;
+			data[4 * i + 2] = tempBall.cameraPosition_.y;
+			data[4 * i + 3] = tempBall.cameraPosition_.z;
+			data[4 * i + 4] = newLabelNum_[tempBall.labelNum_];
+		}
 	}
+	dataSender.writeToBuffer(0, 17, data);
 }
 
 //画图
@@ -72,17 +138,30 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		Ball &tempBall = detectedBalls_.at(index);
 		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
 
-		rectangle(img, tempBall, GREEN, 2);
+		rectangle(img, tempBall, RED, 2);
 		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G") + " x: "
-		                                                + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: "
-		                                                + std::to_string(tempBall.cameraPosition_.y).substr(0, 6) + " z: "
-		                                                + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
-				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		             + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+		             + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
+		        RED, 2);
+	}
+
+	for (int index: selectedBallsIndex_)
+	{
+		Ball &tempBall = detectedBalls_.at(index);
+		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
+
+		rectangle(img, tempBall, GREEN, 2);
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G") + " x: " + std::to_string(tempBall.cameraPosition_.x)
+				        .substr(0, 6) + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6) + " z: " + std::to_string(tempBall.cameraPosition_.z)
+				                                                                                       .substr(0, 6), Point(tempBall.x, tempBall.y),
+		        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 }
 
-void BackDataProcessor::clearBallVectors()
+void BackDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();
+	selectedBallsIndex_.clear();
+	detectMode_ = SINGLE_BALL;
 }

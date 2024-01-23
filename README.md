@@ -33,6 +33,10 @@
   * 添加OvEngineLoader类，实现基于OpenVINO库调用Intel CPU/GPU进行推理的功能
   * RsCameraGroup与WideFieldCameraGroup添加OvEngineLoader相关重载函数
   * 宏定义优化
+* **2024/1/23**
+  * BackDataProcessor修改backDataProcess逻辑错误，添加吸起球-整排球-散球逻辑
+  * DataSender发送长度拓展为32
+  * 部分参数优化
 
 ## 使用说明
 

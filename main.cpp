@@ -23,7 +23,7 @@ int main()
 
 	DataSender dataSender = DataSender(0);
 	BackDataProcessor backDataProcessor;
-	FrontDataProcessor frontDataProcessor;
+//	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
 	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.4, 0.4);
@@ -48,21 +48,17 @@ int main()
 		rsCameraGroup.groupInfer(ovEngineLoader, backDataProcessor);
 #endif
 
-		//to be deprecated
-		frontDataProcessor.detectedBalls_ = backDataProcessor.detectedBalls_;
-		frontDataProcessor.pickedBallsIndex_ = backDataProcessor.pickedBallsIndex_;
-
 		rsCameraGroup.groupDataProcess(backDataProcessor);
 		backDataProcessor.outputPosition(dataSender);
 		rsCameraGroup.groupDrawBoxes(backDataProcessor);
-		backDataProcessor.clearBallVectors();
+		backDataProcessor.resetProcessor();
 
 //		wideFieldCameraGroup.groupGetImg();
 //		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
-		frontDataProcessor.frontDataProcess();
-		frontDataProcessor.outputPosition(dataSender);
+//		frontDataProcessor.frontDataProcess();
+//		frontDataProcessor.outputPosition(dataSender);
 //		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
-		frontDataProcessor.clearBallVectors();
+//		frontDataProcessor.resetProcessor();
 
 //		dataSender.sendData();
 

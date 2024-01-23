@@ -25,10 +25,12 @@ public:
 
 	void frontDataProcess();
 
+	//数据输出
 	void outputPosition(DataSender &dataSender);
 
 	//画图
 	void drawBoxes(WideFieldCameraLoader *wideFieldCameraArray);
 
-	void clearBallVectors();
+	//重置处理器
+	void resetProcessor();
 };

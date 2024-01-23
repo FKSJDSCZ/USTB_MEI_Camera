@@ -10,5 +10,5 @@ Parameters::Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY,
 
 void Parameters::parametersInit()
 {
-	zeroPointToEncodingDisk_ = Point3f(-offsetToEncodingDiskX_, -offsetToEncodingDiskY_, -offsetToEncodingDiskZ_);
+	offsetPoint = Point3f(offsetToEncodingDiskX_, offsetToEncodingDiskY_, offsetToEncodingDiskZ_);
 }

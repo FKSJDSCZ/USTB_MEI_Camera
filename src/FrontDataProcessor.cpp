@@ -151,7 +151,7 @@ void FrontDataProcessor::drawBoxes(WideFieldCameraLoader *wideFieldCameraArray)
 	}
 }
 
-void FrontDataProcessor::clearBallVectors()
+void FrontDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();
