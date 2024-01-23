@@ -45,7 +45,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		for (int index: pickedBallsIndex_)
 		{
 			tempBall = detectedBalls_.at(index);
-			if (std::abs(tempBall.cameraPosition_.y) >= 600)
+			if (std::abs(tempBall.cameraPosition_.y) >= 300)
 			{
 				cameraPosition = detectedBalls_.at(index).cameraPosition_;
 				labelNum = tempBall.labelNum_;
