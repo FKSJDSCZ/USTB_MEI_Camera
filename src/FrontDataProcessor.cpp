@@ -116,7 +116,7 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 		}
 		std::cout << std::endl;
 	}
-	dataSender.writeToBuffer(4, 15, data);
+	dataSender.writeToBuffer(17, 15, data);
 }
 
 //画图

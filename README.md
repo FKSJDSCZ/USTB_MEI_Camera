@@ -14,8 +14,10 @@
 
 ## 更新日志
 
+#### R2-GEN1
+
 * **2023/11/10**
-  * 上传四摄像头4cls模型代码
+  * 新增r2-gen1分支，上传四摄像头4cls模型代码
 * **2023/11/14**
   * Ball添加isInBasket_，适配新的7cls模型
   * BackDataProcessor添加逻辑：删除框内球
@@ -37,6 +39,15 @@
   * BackDataProcessor修改backDataProcess逻辑错误，添加吸起球-整排球-散球逻辑
   * DataSender发送长度拓展为32
   * 部分参数优化
+* **2024/1/24**
+  * BackDataProcessor修改backDataProcess逻辑错误,优化逻辑
+  * FrontDataProcessor修改outputPosition参数错误
+  * 宏定义优化
+
+#### R2-GEN2
+
+* **2024/1/23**
+  * 新增r2-gen2分支，部分参数优化
 
 ## 使用说明
 

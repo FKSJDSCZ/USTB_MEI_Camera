@@ -25,8 +25,9 @@ private:
 	};
 	enum DetectMode
 	{
-		MULTIPLE_BALLS = 0,
-		SINGLE_BALL = 1
+		NO_BALL = 0,
+		SINGLE_BALL = 1,
+		MULTIPLE_BALLS = 2
 	};
 
 	int ballPriority_[4] = {RED_BALL, BLUE_BALL, PURPLE_BALL, BASKET};

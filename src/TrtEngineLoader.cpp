@@ -113,7 +113,7 @@ void TrtEngineLoader::infer()
 	cudaStreamSynchronize(meiCudaStream_);//流同步
 	auto end = std::chrono::system_clock::now();
 
-	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
 //后处理推理数据
@@ -155,7 +155,7 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::
 		}
 		ptr += 5 + classNum_;
 	}
-	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
+//	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 
 	//NMS 防止出现大框套小框
 	for (; detectedBallCount_ < detectedBalls_.size(); ++detectedBallCount_)
