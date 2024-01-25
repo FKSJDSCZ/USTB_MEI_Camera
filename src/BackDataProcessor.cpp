@@ -129,9 +129,12 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
 
 		rectangle(img, tempBall, RED, 2);
-		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G") + " x: "
-		             + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
-		             + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+//		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
+//		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
 		        RED, 2);
 	}
 
@@ -141,9 +144,11 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
 
 		rectangle(img, tempBall, GREEN, 2);
-		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G") + " x: "
-		             + std::to_string(tempBall.cameraPosition_.x).substr(0, 6) + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
-		             + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+//		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
+//		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
 		        GREEN, 2);
 	}
 }

@@ -26,9 +26,9 @@ int main()
 //	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.6, 0.4);
+	TrtEngineLoader trtEngineLoader = TrtEngineLoader("yolov5-best-fp16.engine", 0.4, 0.6, 0.4);
 #elif defined(WITH_OPENVINO)
-	OvEngineLoader ovEngineLoader = OvEngineLoader("best-7cls.xml", "CPU", 0.4, 0.6, 0.4);
+	OvEngineLoader ovEngineLoader = OvEngineLoader("yolov5-best-fp16.xml", "CPU", 0.4, 0.6, 0.4);
 #endif
 	RsCameraGroup rsCameraGroup;
 //	WideFieldCameraGroup wideFieldCameraGroup;
