@@ -23,10 +23,10 @@ void FrontDataProcessor::frontDataProcess()
 			baskets_.emplace_back(detectedBalls_.at(*(pickedIt)));
 			pickedBallsIndex_.erase(pickedIt);
 		}
-		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
-		{
-			pickedBallsIndex_.erase(pickedIt);
-		}
+//		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
+//		{
+//			pickedBallsIndex_.erase(pickedIt);
+//		}
 		else
 		{
 			pickedIt++;

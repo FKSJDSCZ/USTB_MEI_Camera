@@ -26,11 +26,10 @@ int main()
 	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("best-7cls-fp32.engine", 0.4, 0.4, 0.4);
+	TrtEngineLoader trtEngineLoader = TrtEngineLoader("yolov5-best-fp16.engine", 0.4, 0.6, 0.4);
 #elif defined(WITH_OPENVINO)
-	OvEngineLoader ovEngineLoader = OvEngineLoader("best-7cls.xml", "CPU", 0.4, 0.4, 0.4);
+	OvEngineLoader ovEngineLoader = OvEngineLoader("yolov5-best-fp16.xml", "CPU", 0.4, 0.6, 0.4);
 #endif
-
 	RsCameraGroup rsCameraGroup;
 //	WideFieldCameraGroup wideFieldCameraGroup;
 
@@ -41,6 +40,7 @@ int main()
 
 	while (true)
 	{
+		//后场识别
 		rsCameraGroup.groupGetImg();
 #if defined(WITH_CUDA)
 		rsCameraGroup.groupInfer(trtEngineLoader, backDataProcessor);
@@ -48,23 +48,33 @@ int main()
 		rsCameraGroup.groupInfer(ovEngineLoader, backDataProcessor);
 #endif
 
-		//to be deprecated
 		frontDataProcessor.detectedBalls_ = backDataProcessor.detectedBalls_;
 		frontDataProcessor.pickedBallsIndex_ = backDataProcessor.pickedBallsIndex_;
 
 		rsCameraGroup.groupDataProcess(backDataProcessor);
 		backDataProcessor.outputPosition(dataSender);
+#if defined(GRAPHIC_DEBUG)
 		rsCameraGroup.groupDrawBoxes(backDataProcessor);
+#endif
 		backDataProcessor.clearBallVectors();
 
+		//前场识别
 //		wideFieldCameraGroup.groupGetImg();
+//#if defined(WITH_CUDA)
 //		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
+//#elif defined(WITH_OPENVINO)
+//		wideFieldCameraGroup.groupInfer(ovEngineLoader, frontDataProcessor);
+//#endif
 		frontDataProcessor.frontDataProcess();
 		frontDataProcessor.outputPosition(dataSender);
+//#if defined(GRAPHIC_DEBUG)
 //		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
+//#endif
 		frontDataProcessor.clearBallVectors();
 
-//		dataSender.sendData();
+#if defined(WITH_SERIAL)
+		dataSender.sendData();
+#endif
 
 		if (waitKey(1) == 27)
 		{

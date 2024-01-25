@@ -25,6 +25,7 @@ public:
 
 	void frontDataProcess();
 
+	//数据输出
 	void outputPosition(DataSender &dataSender);
 
 	//画图

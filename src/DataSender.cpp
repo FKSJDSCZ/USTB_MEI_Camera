@@ -2,7 +2,9 @@
 
 DataSender::DataSender(int devIndex)
 {
-//	portInit(devIndex);
+#if defined(WITH_SERIAL)
+	portInit(devIndex);
+#endif
 }
 
 void DataSender::portInit(int devIndex)
@@ -39,6 +41,12 @@ void DataSender::sendData()
 	int len = UART0_Send(fd_, data, dataNum_ * 2 + 2);
 	if (len > 0)
 	{
+		std::cout << "[Info] data: ";
+		for (int i = 0; i < dataNum_; ++i)
+		{
+			std::cout << dataBuffer_[i] << " ";
+		}
+		std::cout << std::endl;
 		std::cout << "[Info] Send " << len << " data successfully" << std::endl;
 	}
 	else
