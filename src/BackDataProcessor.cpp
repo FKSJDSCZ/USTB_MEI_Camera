@@ -11,7 +11,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		tempBall.distance_ = Functions::calcDistance(tempBall.cameraPosition_, Point3f(0, 0, 0));
 	}
 
-	//删除框内球和框
+	//删除框内球和框，并拷贝0号摄像头的球
 	for (auto it = pickedBallsIndex_.begin(); it != pickedBallsIndex_.end();)
 	{
 		Ball &tempBall = detectedBalls_.at(*(it));
@@ -19,25 +19,23 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		{
 			pickedBallsIndex_.erase(it);
 		}
+		else if (tempBall.cameraId_ == 0)
+		{
+			matrixBallsIndex_.push_back(*(it));
+			it++;
+		}
 		else
 		{
 			it++;
 		}
 	}
 
-	//判断是否空场
-	if (pickedBallsIndex_.empty())
-	{
-		detectMode_ = NO_BALL;
-		return;
-	}
-
 	//筛选成排的球
-	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+	std::sort(matrixBallsIndex_.begin(), matrixBallsIndex_.end(), [this](int index1, int index2) -> bool {
 		return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
 	});
 	//直线判定
-	for (int index: pickedBallsIndex_)
+	for (int index: matrixBallsIndex_)
 	{
 		Ball &tempBall = detectedBalls_.at(index);
 		if (selectedBallsIndex_.empty())
@@ -65,7 +63,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 			{
 				Ball &tempBall1 = detectedBalls_.at(selectedBallsIndex_.at(i));
 				Ball &tempBall2 = detectedBalls_.at(selectedBallsIndex_.at(i + 1));
-				if (tempBall2.cameraPosition_.x - tempBall1.cameraPosition_.x > 5 * RADIUS / 2)
+				if (tempBall2.cameraPosition_.x - tempBall1.cameraPosition_.x > 11 * RADIUS / 4)
 				{
 					detectMode_ = SINGLE_BALL;
 					break;
@@ -78,7 +76,11 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	if (detectMode_ == SINGLE_BALL)
 	{
 		selectedBallsIndex_.clear();
-		if (!pickedBallsIndex_.empty())
+		if (pickedBallsIndex_.empty())
+		{
+			detectMode_ = NO_BALL;
+		}
+		else
 		{
 			std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
 				Ball &tempBall1 = detectedBalls_.at(index1);
@@ -138,9 +140,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 //		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
 //		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
 //		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
-
-				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
-		        RED, 2);
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, RED, 2);
 	}
 
 	for (int index: selectedBallsIndex_)
@@ -153,8 +153,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 //		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
 //		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
 //		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
-				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6,
-		        GREEN, 2);
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 }
 
@@ -162,6 +161,7 @@ void BackDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();
+	matrixBallsIndex_.clear();
 	selectedBallsIndex_.clear();
 	detectMode_ = SINGLE_BALL;
 }

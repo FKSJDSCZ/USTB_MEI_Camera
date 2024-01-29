@@ -130,7 +130,7 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::v
 			pickedBallsIndex_.push_back(detectedBallCount_);
 		}
 	}
-	std::cout << "[Info] Picked " << pickedBallsIndex_.size() << " objects" << std::endl;
+//	std::cout << "[Info] Picked " << pickedBallsIndex_.size() << " objects" << std::endl;
 }
 
 #endif

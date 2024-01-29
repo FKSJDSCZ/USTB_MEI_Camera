@@ -91,7 +91,8 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 		for (int i = 0; i < 5; ++i)
 		{
 			int j = 0;
-			for (; j < baskets_.at(i).containedBalls_.size(); ++j)
+			int size = std::min(3, static_cast<int>(baskets_.at(i).containedBalls_.size()));
+			for (; j < size; ++j)
 			{
 				data[i + j * 5] = newLabelNum_[detectedBalls_.at(baskets_.at(i).containedBalls_.at(j)).labelNum_];
 			}

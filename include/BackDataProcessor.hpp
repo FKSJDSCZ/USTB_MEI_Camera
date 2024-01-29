@@ -37,6 +37,7 @@ private:
 public:
 	std::vector<Ball> detectedBalls_;
 	std::vector<int> pickedBallsIndex_;
+	std::vector<int> matrixBallsIndex_;
 	std::vector<int> selectedBallsIndex_;
 
 	void backDataProcess(RsCameraLoader *rsCameraArray);
