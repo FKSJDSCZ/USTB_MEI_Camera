@@ -40,9 +40,11 @@
   * DataSender发送长度拓展为32
   * 部分参数优化
 * **2024/1/24**
-  * BackDataProcessor修改backDataProcess逻辑错误,优化逻辑
+  * BackDataProcessor修改backDataProcess逻辑错误，优化逻辑
   * FrontDataProcessor修改outputPosition参数错误
   * 宏定义优化
+* **2024/1/30**
+  * BackDataProcessor修改backDataProcess逻辑，大于两个球成排都认为是一排球
 
 #### R2-GEN2
 

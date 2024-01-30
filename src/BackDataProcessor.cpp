@@ -55,21 +55,38 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		}
 		if (selectedBallsIndex_.size() == 4)
 		{
-			detectMode_ = MULTIPLE_BALLS;
-			std::sort(selectedBallsIndex_.begin(), selectedBallsIndex_.end(), [this](int index1, int index2) -> bool {
-				return detectedBalls_.at(index1).centerX_ < detectedBalls_.at(index2).centerX_;
-			});
-			for (int i = 0; i <= 2; ++i)
+			break;
+		}
+	}
+
+	if (selectedBallsIndex_.size() >= 2)
+	{
+		detectMode_ = MULTIPLE_BALLS;
+		std::sort(selectedBallsIndex_.begin(), selectedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+			return detectedBalls_.at(index1).centerX_ < detectedBalls_.at(index2).centerX_;
+		});
+		auto it1 = selectedBallsIndex_.begin();
+		auto it2 = selectedBallsIndex_.begin();
+		it2++;
+		while (it2 != selectedBallsIndex_.end())
+		{
+			Ball &tempBall1 = detectedBalls_.at(*(it1));
+			Ball &tempBall2 = detectedBalls_.at(*(it2));
+			if (tempBall2.cameraPosition_.x - tempBall1.cameraPosition_.x > 11 * RADIUS / 4)
 			{
-				Ball &tempBall1 = detectedBalls_.at(selectedBallsIndex_.at(i));
-				Ball &tempBall2 = detectedBalls_.at(selectedBallsIndex_.at(i + 1));
-				if (tempBall2.cameraPosition_.x - tempBall1.cameraPosition_.x > 11 * RADIUS / 4)
-				{
-					detectMode_ = SINGLE_BALL;
-					break;
-				}
+				selectedBallsIndex_.erase(it2);
+			}
+			else
+			{
+				it1++;
+				it2++;
 			}
 		}
+	}
+
+	if (selectedBallsIndex_.size() <= 1)
+	{
+		detectMode_ = SINGLE_BALL;
 	}
 
 	//对选择结果进行判断
@@ -139,7 +156,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
 //		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
 //		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
-//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+		                                                + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
 				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, RED, 2);
 	}
 
@@ -152,7 +169,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
 //		+ " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
 //		+ " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
-//		+ " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+		                                                + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
 				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 }
