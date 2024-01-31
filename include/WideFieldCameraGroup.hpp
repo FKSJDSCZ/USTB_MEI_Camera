@@ -2,6 +2,7 @@
 
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
+#include <grp.h>
 #include "WideFieldCameraLoader.hpp"
 
 #if defined(WITH_CUDA)

@@ -41,13 +41,18 @@ void DataSender::sendData()
 	int len = UART0_Send(fd_, data, dataNum_ * 2 + 2);
 	if (len > 0)
 	{
-		std::cout << "[Info] data: ";
-		for (int i = 0; i < dataNum_; ++i)
+		std::cout << "[Info] data:\t\t\t";
+		std::cout << dataBuffer_[0] << "\t";
+		for (int i = 0; i < 4; ++i)
 		{
-			std::cout << dataBuffer_[i] << " ";
+			for (int j = 1; j < 5; ++j)
+			{
+				std::cout << dataBuffer_[4 * i + j] << "\t";
+			}
+			std::cout << "\t";
 		}
 		std::cout << std::endl;
-		std::cout << "[Info] Send " << len << " data successfully" << std::endl;
+//		std::cout << "[Info] Send " << len << " data successfully" << std::endl;
 	}
 	else
 	{

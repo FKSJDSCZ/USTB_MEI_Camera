@@ -4,13 +4,24 @@ void WideFieldCameraGroup::detectWideFieldCamera()
 {
 	int index = 0;
 	v4l2_capability cap{};
+	struct stat statInfo{};
+	struct group *group_;
 	while (true)
 	{
-		int fd = open(("/dev/video" + std::to_string(index)).c_str(), O_RDONLY);
-		if (fd == -1)
+		std::string cameraFilePath = "/dev/video" + std::to_string(index);
+
+		if (stat(cameraFilePath.c_str(), &statInfo) == -1)
 		{
 			break;
 		}
+		group_ = getgrgid(statInfo.st_gid);
+		if (std::string(group_->gr_name) != "video")
+		{
+			index += 2;
+			continue;
+		}
+
+		int fd = open(cameraFilePath.c_str(), O_RDONLY);
 		ioctl(fd, VIDIOC_QUERYCAP, &cap);
 
 		std::string info = std::string(reinterpret_cast<char *>(cap.card));
