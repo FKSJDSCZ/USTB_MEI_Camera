@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "Ball.hpp"
 #include "RsCameraLoader.hpp"
 #include "Functions.hpp"
@@ -9,6 +10,22 @@
 class BackDataProcessor
 {
 private:
+	class InlinedBalls
+	{
+	public:
+		float ballsCenterX_;
+		float ballsCenterY_;
+		std::vector<int> ballsIndex_;
+
+		InlinedBalls(int index);
+
+		int appendBall(int index, BackDataProcessor &backDataProcessor);
+
+		void calcBallsCenter(BackDataProcessor &backDataProcessor);
+
+		void sortLinedBalls(BackDataProcessor &backDataProcessor);
+	};
+
 	enum PriorityTag
 	{
 		RED_BALL = 0,
@@ -32,13 +49,12 @@ private:
 
 	int ballPriority_[4] = {RED_BALL, BLUE_BALL, PURPLE_BALL, BASKET};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
-	int detectMode_ = SINGLE_BALL;
 
 public:
 	std::vector<Ball> detectedBalls_;
 	std::vector<int> pickedBallsIndex_;
-	std::vector<int> matrixBallsIndex_;
-	std::vector<int> selectedBallsIndex_;
+	std::vector<int> candidateBalls_;
+	std::vector<InlinedBalls> inlinedBallsGroup_;
 
 	void backDataProcess(RsCameraLoader *rsCameraArray);
 

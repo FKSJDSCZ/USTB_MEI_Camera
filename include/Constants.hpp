@@ -8,3 +8,5 @@ extern const Scalar GREEN;
 extern const Scalar WHITE;
 extern const Scalar RED;
 extern const float RADIUS;
+extern const int SUCCESS;
+extern const int FAILURE;

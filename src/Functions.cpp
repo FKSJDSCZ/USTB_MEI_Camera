@@ -8,8 +8,13 @@ float Functions::calcIou(Ball &ball1, Ball &ball2)
 	return interArea / unionArea;
 }
 
-float Functions::calcDistance(Point3f cameraPosition1, Point3f cameraPosition2)
+float Functions::calcDistance3f(Point3f cameraPosition1, Point3f cameraPosition2)
 {
 	return std::sqrt(pow(cameraPosition1.x - cameraPosition2.x, 2) + pow(cameraPosition1.y - cameraPosition2.y, 2)
 	                 + pow(cameraPosition1.z - cameraPosition2.z, 2));
+}
+
+float Functions::calcDistance2f(Point2f pixelPosition1, Point2f pixelPosition2)
+{
+	return std::sqrt(pow(pixelPosition1.x - pixelPosition2.x, 2) + pow(pixelPosition1.y - pixelPosition2.y, 2));
 }
