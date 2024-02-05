@@ -11,78 +11,32 @@ int BackDataProcessor::InlinedBalls::appendBall(int index, BackDataProcessor &ba
 	{
 		//斜率判定
 		Ball &targetBall = backDataProcessor.detectedBalls_.at(index);
-		float minDistance = 1 << 12;
-		int minIndex = 0;
-
-		for (int i: ballsIndex_)
+		Ball &originalBall = backDataProcessor.detectedBalls_.at(ballsIndex_.back());
+		double gradient = Functions::calcGradient(originalBall, targetBall);
+		if (ballsIndex_.size() == 1)
 		{
-			Ball &tempBall = backDataProcessor.detectedBalls_.at(i);
-			float tempDistance =
-					Functions::calcDistance2f(Point2f(targetBall.centerX_, targetBall.centerY_), Point2f(tempBall.centerX_, tempBall.centerY_));
-			if (tempDistance < minDistance)
+			if (std::abs(gradient) < 1)
 			{
-				minIndex = i;
-				minDistance = tempDistance;
+				gradient_ = gradient;
+				ballsIndex_.push_back(index);
+				return SUCCESS;
 			}
-		}
-
-		Ball &nearestBall = backDataProcessor.detectedBalls_.at(minIndex);
-		int deltaX = static_cast<int>(targetBall.centerX_ - nearestBall.centerX_);
-		int deltaY = static_cast<int>(targetBall.centerY_ - nearestBall.centerY_);
-		double tangent;
-		double degree;
-
-		if (deltaX)
-		{
-			tangent = static_cast<double>(deltaY) / deltaX;
-			degree = std::atan(tangent);
-			if (!(degree > -CV_PI / 4 && degree < CV_PI / 4))
+			else
 			{
 				return FAILURE;
 			}
 		}
 		else
 		{
-			return FAILURE;
-		}
-
-		//距离判断
-		bool isBiggest = false;
-		auto rightBallit = ballsIndex_.begin();
-		while (rightBallit != ballsIndex_.end())
-		{
-			if (targetBall.centerX_ > backDataProcessor.detectedBalls_.at(*(rightBallit)).centerX_)
-			{
-				rightBallit++;
-			}
-			else
-			{
-				break;
-			}
-		}
-		if (rightBallit == ballsIndex_.end())
-		{
-			isBiggest = true;
-			rightBallit--;
-		}
-		Ball &rightBall = backDataProcessor.detectedBalls_.at(*(rightBallit));
-		Point2f p2 = Point2f(targetBall.centerX_, targetBall.centerY_);
-		Point2f p3 = Point2f(rightBall.centerX_, rightBall.centerY_);
-		if (Functions::calcDistance2f(p2, p3) < 2.25f * nearestBall.width / 2)
-		{
-			if (isBiggest)
+			if (std::abs(gradient) < 1 && std::abs(gradient - gradient_) < 0.15)
 			{
 				ballsIndex_.push_back(index);
+				return SUCCESS;
 			}
 			else
 			{
-				ballsIndex_.insert(rightBallit, index);
+				return FAILURE;
 			}
-			return SUCCESS;
-		}
-		else
-		{
-			return FAILURE;
 		}
 	}
 	else
@@ -112,6 +66,83 @@ void BackDataProcessor::InlinedBalls::calcBallsCenter(BackDataProcessor &backDat
 	}
 }
 
+bool BackDataProcessor::InlinedBalls::checkDistance(BackDataProcessor &backDataProcessor)
+{
+	if (ballsIndex_.size() > 1)
+	{
+		sortLinedBalls(backDataProcessor);
+		for (int i = 0; i < 3; ++i)
+		{
+			Ball &ball1 = backDataProcessor.detectedBalls_.at(ballsIndex_.at(i));
+			Ball &ball2 = backDataProcessor.detectedBalls_.at(ballsIndex_.at(i + 1));
+			Point2f p1 = Point2f(ball1.centerX_, ball1.centerY_);
+			Point2f p2 = Point2f(ball2.centerX_, ball2.centerY_);
+			if (Functions::calcDistance2f(p1, p2) >= 2.3f * ball1.width / 2)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	return true;
+}
+
+void BackDataProcessor::InlinedBalls::positionRevise(BackDataProcessor &backDataProcessor, RsCameraLoader *rsCameraArray)
+{
+	std::vector<int> standardBallIndex;
+	std::vector<int> wrongBallIndex;
+	std::map<int, int> order;
+	for (int i = 0; i < ballsIndex_.size(); ++i)
+	{
+		order.insert(std::make_pair(ballsIndex_.at(i), i));
+	}
+
+	for (int index: ballsIndex_)
+	{
+		Ball &tempBall = backDataProcessor.detectedBalls_.at(index);
+		if (rsCameraArray[tempBall.cameraId_].parameters_.offsetPoint == tempBall.cameraPosition_)
+		{
+			wrongBallIndex.push_back(index);
+		}
+		else
+		{
+			standardBallIndex.push_back(index);
+		}
+	}
+	if (standardBallIndex.size() > 1 && standardBallIndex.size() < 4)
+	{
+		Ball &firstBall = backDataProcessor.detectedBalls_.at(ballsIndex_.front());
+		Ball &lastBall = backDataProcessor.detectedBalls_.at(ballsIndex_.back());
+		int length = order[ballsIndex_.back()] - order[ballsIndex_.front()];
+		float differenceX = (lastBall.cameraPosition_.x - firstBall.cameraPosition_.x) / length;
+		float differenceZ = (lastBall.cameraPosition_.z - firstBall.cameraPosition_.z) / length;
+
+		for (int wrongIndex: wrongBallIndex)
+		{
+			auto it = std::upper_bound(standardBallIndex.begin(), standardBallIndex.end(), order[wrongIndex],
+			                           [&order](int standardIndex_, int val_) -> bool {
+				                           return order[standardIndex_] < val_;
+			                           });
+			if (it == standardBallIndex.end())
+			{
+				int length_ = order[wrongIndex] - order[standardBallIndex.back()];
+				Point3f &wrongBallPosition = backDataProcessor.detectedBalls_.at(wrongIndex).cameraPosition_;
+				Point3f &standardBallPosition = backDataProcessor.detectedBalls_.at(standardBallIndex.back()).cameraPosition_;
+				wrongBallPosition = Point3f(standardBallPosition.x + differenceX * length_, standardBallPosition.y,
+				                            standardBallPosition.z + differenceZ * length_);
+			}
+			else
+			{
+				int length_ = order[*(it)] - order[wrongIndex];
+				Point3f &wrongBallPosition = backDataProcessor.detectedBalls_.at(wrongIndex).cameraPosition_;
+				Point3f &standardBallPosition = backDataProcessor.detectedBalls_.at(*(it)).cameraPosition_;
+				wrongBallPosition = Point3f(standardBallPosition.x - differenceX * length_, standardBallPosition.y,
+				                            standardBallPosition.z - differenceZ * length_);
+			}
+		}
+	}
+}
+
 void BackDataProcessor::InlinedBalls::sortLinedBalls(BackDataProcessor &backDataProcessor)
 {
 	std::sort(ballsIndex_.begin(), ballsIndex_.end(), [backDataProcessor](int index1, int index2) -> bool {
@@ -121,6 +152,7 @@ void BackDataProcessor::InlinedBalls::sortLinedBalls(BackDataProcessor &backData
 
 void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 {
+	//参数计算
 	for (int index: pickedBallsIndex_)
 	{
 		Ball &tempBall = detectedBalls_.at(index);
@@ -149,20 +181,6 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		}
 	}
 
-	//准备发散球
-	if (candidateBalls_.empty())
-	{
-		std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
-			Ball &ball1 = detectedBalls_.at(index1);
-			Ball &ball2 = detectedBalls_.at(index2);
-			if (ball1.labelNum_ == ball2.labelNum_)
-			{
-				return ball1.distance_ < ball2.distance_;
-			}
-			return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
-		});
-	}
-
 	//自下向上扫描
 	std::sort(candidateBalls_.begin(), candidateBalls_.end(), [this](int index1, int index2) -> bool {
 		return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
@@ -184,58 +202,99 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		}
 	}
 
-	//计算每排球的几何中心，每排球内部自左向右排序
+	//计算每排球的几何中心
 	for (InlinedBalls &inlinedBalls: inlinedBallsGroup_)
 	{
 		inlinedBalls.calcBallsCenter(*this);
-//		inlinedBalls.sortLinedBalls(*this);
 	}
 
 	//自下向上排序
 	std::sort(inlinedBallsGroup_.begin(), inlinedBallsGroup_.end(), [](InlinedBalls &line1, InlinedBalls &line2) -> bool {
 		return line1.ballsCenterY_ > line2.ballsCenterY_;
 	});
+
+	//整球识别结果处理
+	for (auto it = inlinedBallsGroup_.begin(); it != inlinedBallsGroup_.end();)
+	{
+		if (it->checkDistance(*this))
+		{
+			it->positionRevise(*this, rsCameraArray);
+			it++;
+		}
+		else
+		{
+			for (int index: it->ballsIndex_)
+			{
+				pickedBallsIndex_.push_back(index);
+			}
+			inlinedBallsGroup_.erase(it);
+		}
+	}
+
+	//去除坐标错误的球。注：这一步不能放在整球判定之前
+	for (auto it = pickedBallsIndex_.begin(); it != pickedBallsIndex_.end();)
+	{
+		Ball &tempBall = detectedBalls_.at(*(it));
+		if (rsCameraArray[tempBall.cameraId_].parameters_.offsetPoint == tempBall.cameraPosition_)
+		{
+			pickedBallsIndex_.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+
+	if (pickedBallsIndex_.empty())
+	{
+		detectMode_ = NO_BALL;
+	}
+	else
+	{
+		if (inlinedBallsGroup_.empty() || inlinedBallsGroup_.at(0).ballsIndex_.size() < 4)
+		{
+			detectMode_ = SINGLE_BALL;
+
+			std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+				Ball &ball1 = detectedBalls_.at(index1);
+				Ball &ball2 = detectedBalls_.at(index2);
+				if (ball1.labelNum_ == ball2.labelNum_)
+				{
+					return ball1.distance_ < ball2.distance_;
+				}
+				return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
+			});
+		}
+		else
+		{
+			detectMode_ = MULTIPLE_BALLS;
+		}
+	}
 }
 
 //数据输出
 void BackDataProcessor::outputPosition(DataSender &dataSender)
 {
 	int data[17] = {0};
-	if (!pickedBallsIndex_.empty())
+	data[0] = detectMode_;
+	if (detectMode_ == SINGLE_BALL)
 	{
-		if (inlinedBallsGroup_.empty())
+		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
+		data[1] = tempBall.cameraPosition_.x;
+		data[2] = tempBall.cameraPosition_.y;
+		data[3] = tempBall.cameraPosition_.z;
+		data[4] = newLabelNum_[tempBall.labelNum_];
+	}
+	else if (detectMode_ == MULTIPLE_BALLS)
+	{
+		InlinedBalls &inlinedBalls = inlinedBallsGroup_.at(0);
+		for (int i = 0; i < 4; ++i)
 		{
-			Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
-			data[0] = SINGLE_BALL;
-			data[1] = tempBall.cameraPosition_.x;
-			data[2] = tempBall.cameraPosition_.y;
-			data[3] = tempBall.cameraPosition_.z;
-			data[4] = newLabelNum_[tempBall.labelNum_];
-		}
-		else
-		{
-			InlinedBalls &inlinedBalls = inlinedBallsGroup_.at(0);
-			if (inlinedBalls.ballsIndex_.size() < 4)
-			{
-				Ball &tempBall = detectedBalls_.at(inlinedBalls.ballsIndex_.at(0));
-				data[0] = SINGLE_BALL;
-				data[1] = tempBall.cameraPosition_.x;
-				data[2] = tempBall.cameraPosition_.y;
-				data[3] = tempBall.cameraPosition_.z;
-				data[4] = newLabelNum_[tempBall.labelNum_];
-			}
-			else
-			{
-				data[0] = MULTIPLE_BALLS;
-				for (int i = 0; i < 4; ++i)
-				{
-					Ball &tempBall = detectedBalls_.at(inlinedBalls.ballsIndex_.at(i));
-					data[4 * i + 1] = tempBall.cameraPosition_.x;
-					data[4 * i + 2] = tempBall.cameraPosition_.y;
-					data[4 * i + 3] = tempBall.cameraPosition_.z;
-					data[4 * i + 4] = newLabelNum_[tempBall.labelNum_];
-				}
-			}
+			Ball &tempBall = detectedBalls_.at(inlinedBalls.ballsIndex_.at(i));
+			data[4 * i + 1] = tempBall.cameraPosition_.x;
+			data[4 * i + 2] = tempBall.cameraPosition_.y;
+			data[4 * i + 3] = tempBall.cameraPosition_.z;
+			data[4 * i + 4] = newLabelNum_[tempBall.labelNum_];
 		}
 	}
 	dataSender.writeToBuffer(0, 17, data);

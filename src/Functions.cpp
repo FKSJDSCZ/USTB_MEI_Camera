@@ -18,3 +18,11 @@ float Functions::calcDistance2f(Point2f pixelPosition1, Point2f pixelPosition2)
 {
 	return std::sqrt(pow(pixelPosition1.x - pixelPosition2.x, 2) + pow(pixelPosition1.y - pixelPosition2.y, 2));
 }
+
+double Functions::calcGradient(Ball &origin, Ball &target)
+{
+	int deltaX = static_cast<int>(target.centerX_ - origin.centerX_);
+	int deltaY = static_cast<int>(target.centerY_ - origin.centerY_);
+	double tangent = static_cast<double>(deltaY) / deltaX;
+	return tangent;
+}

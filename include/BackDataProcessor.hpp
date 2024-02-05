@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cmath>
+#include <map>
 #include "Ball.hpp"
 #include "RsCameraLoader.hpp"
 #include "Functions.hpp"
@@ -12,9 +12,13 @@ class BackDataProcessor
 private:
 	class InlinedBalls
 	{
+	private:
+		void sortLinedBalls(BackDataProcessor &backDataProcessor);
+
 	public:
 		float ballsCenterX_;
 		float ballsCenterY_;
+		double gradient_;
 		std::vector<int> ballsIndex_;
 
 		InlinedBalls(int index);
@@ -23,7 +27,9 @@ private:
 
 		void calcBallsCenter(BackDataProcessor &backDataProcessor);
 
-		void sortLinedBalls(BackDataProcessor &backDataProcessor);
+		bool checkDistance(BackDataProcessor &backDataProcessor);
+
+		void positionRevise(BackDataProcessor &backDataProcessor, RsCameraLoader *rsCameraArray);
 	};
 
 	enum PriorityTag
@@ -47,6 +53,7 @@ private:
 		MULTIPLE_BALLS = 2
 	};
 
+	int detectMode_;
 	int ballPriority_[4] = {RED_BALL, BLUE_BALL, PURPLE_BALL, BASKET};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
 
