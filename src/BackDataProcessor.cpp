@@ -28,7 +28,7 @@ int BackDataProcessor::InlinedBalls::appendBall(int index, BackDataProcessor &ba
 		}
 		else
 		{
-			if (std::abs(gradient) < 1 && std::abs(gradient - gradient_) < 0.15)
+			if (std::abs(gradient) < 1 && std::abs(gradient - gradient_) < 0.3)
 			{
 				ballsIndex_.push_back(index);
 				return SUCCESS;
@@ -68,21 +68,45 @@ void BackDataProcessor::InlinedBalls::calcBallsCenter(BackDataProcessor &backDat
 
 bool BackDataProcessor::InlinedBalls::checkDistance(BackDataProcessor &backDataProcessor)
 {
-	if (ballsIndex_.size() > 1)
+	if (ballsIndex_.size() >= 2)
 	{
 		sortLinedBalls(backDataProcessor);
-		for (int i = 0; i < 3; ++i)
+
+		auto nextIt = ballsIndex_.begin();
+		bool isContinue = false;
+		while (true)
 		{
-			Ball &ball1 = backDataProcessor.detectedBalls_.at(ballsIndex_.at(i));
-			Ball &ball2 = backDataProcessor.detectedBalls_.at(ballsIndex_.at(i + 1));
+			auto it = nextIt++;
+			if (nextIt == ballsIndex_.end())
+			{
+				break;
+			}
+			Ball &ball1 = backDataProcessor.detectedBalls_.at(*(it));
+			Ball &ball2 = backDataProcessor.detectedBalls_.at(*(nextIt));
 			Point2f p1 = Point2f(ball1.centerX_, ball1.centerY_);
 			Point2f p2 = Point2f(ball2.centerX_, ball2.centerY_);
-			if (Functions::calcDistance2f(p1, p2) >= 2.3f * ball1.width / 2)
+			if (Functions::calcDistance2f(p1, p2) <= 2.3f * ball1.width / 2)
 			{
-				return false;
+				isContinue = true;
+			}
+			else
+			{
+				if (isContinue)
+				{
+					while (nextIt != ballsIndex_.end())
+					{
+						ballsIndex_.erase(nextIt);
+					}
+					break;
+				}
+				else
+				{
+					ballsIndex_.erase(it);
+					nextIt--;
+				}
 			}
 		}
-		return true;
+		return !ballsIndex_.empty();
 	}
 	return true;
 }
@@ -231,7 +255,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		}
 	}
 
-	//去除坐标错误的球。注：这一步不能放在整球判定之前
+	//去除坐标无效的球。注：这一步不能放在positionRevise()之前
 	for (auto it = pickedBallsIndex_.begin(); it != pickedBallsIndex_.end();)
 	{
 		Ball &tempBall = detectedBalls_.at(*(it));
@@ -249,26 +273,23 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	{
 		detectMode_ = NO_BALL;
 	}
+	else if (inlinedBallsGroup_.empty())
+	{
+		detectMode_ = SCATTERED_BALL;
+
+		std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
+			Ball &ball1 = detectedBalls_.at(index1);
+			Ball &ball2 = detectedBalls_.at(index2);
+			if (ball1.labelNum_ == ball2.labelNum_)
+			{
+				return ball1.distance_ < ball2.distance_;
+			}
+			return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
+		});
+	}
 	else
 	{
-		if (inlinedBallsGroup_.empty() || inlinedBallsGroup_.at(0).ballsIndex_.size() < 4)
-		{
-			detectMode_ = SINGLE_BALL;
-
-			std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
-				Ball &ball1 = detectedBalls_.at(index1);
-				Ball &ball2 = detectedBalls_.at(index2);
-				if (ball1.labelNum_ == ball2.labelNum_)
-				{
-					return ball1.distance_ < ball2.distance_;
-				}
-				return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
-			});
-		}
-		else
-		{
-			detectMode_ = MULTIPLE_BALLS;
-		}
+		detectMode_ = MATRIX_BALL;
 	}
 }
 
@@ -277,7 +298,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 {
 	int data[17] = {0};
 	data[0] = detectMode_;
-	if (detectMode_ == SINGLE_BALL)
+	if (detectMode_ == SCATTERED_BALL)
 	{
 		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
 		data[1] = tempBall.cameraPosition_.x;
@@ -285,10 +306,12 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		data[3] = tempBall.cameraPosition_.z;
 		data[4] = newLabelNum_[tempBall.labelNum_];
 	}
-	else if (detectMode_ == MULTIPLE_BALLS)
+	else if (detectMode_ == MATRIX_BALL)
 	{
 		InlinedBalls &inlinedBalls = inlinedBallsGroup_.at(0);
-		for (int i = 0; i < 4; ++i)
+		int size = std::min(4, static_cast<int>(inlinedBalls.ballsIndex_.size()));
+		data[0] = size;
+		for (int i = 0; i < size; ++i)
 		{
 			Ball &tempBall = detectedBalls_.at(inlinedBalls.ballsIndex_.at(i));
 			data[4 * i + 1] = tempBall.cameraPosition_.x;
@@ -298,7 +321,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		}
 	}
 	dataSender.writeToBuffer(0, 17, data);
-	std::cout << "[Info] Selected " << inlinedBallsGroup_.size() << " lines of objects. Detect mode: " << data[0] << std::endl;
+//	std::cout << "[Info] Selected " << inlinedBallsGroup_.size() << " lines of objects. Detect mode: " << data[0] << std::endl;
 }
 
 //画图

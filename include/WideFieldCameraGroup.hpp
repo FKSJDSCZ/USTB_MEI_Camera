@@ -18,7 +18,7 @@
 class WideFieldCameraGroup
 {
 private:
-	std::string cardInfo_[2] = {"LRCP 500W: LRCP 500W", "USB 2.0 Camera: Camera001"};
+	std::string cardInfo_[2] = {"LRCP 1080P-60FPS: LRCP 1080P-60", "LRCP 500W: LRCP 500W"};
 	bool enabled_[2] = {false, false};
 	int devIndex_[2];
 
