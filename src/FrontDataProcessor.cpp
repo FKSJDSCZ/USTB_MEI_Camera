@@ -23,38 +23,38 @@ void FrontDataProcessor::frontDataProcess()
 			baskets_.emplace_back(detectedBalls_.at(*(pickedIt)));
 			pickedBallsIndex_.erase(pickedIt);
 		}
-		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
-		{
-			pickedBallsIndex_.erase(pickedIt);
-		}
+//		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
+//		{
+//			pickedBallsIndex_.erase(pickedIt);
+//		}
 		else
 		{
 			pickedIt++;
 		}
 	}
 
-	//框个数不足，退出
-	if (baskets_.size() < 5)
+	//框个数不满足要求，退出
+	if (baskets_.size() != 5)
 	{
 		isFullDetect_ = false;
 		return;
 	}
 
-	std::cout << "[Info] Successfully detected 5 baskets" << std::endl;
 	isFullDetect_ = true;
 	//筛选框内球
 	auto pickedIt = pickedBallsIndex_.begin();
 	for (Basket &basket: baskets_)
 	{
-		//横向筛选 由于使用神经网络 不需要纵向筛选
+		//横向筛选
 		for (; pickedIt != pickedBallsIndex_.end(); ++pickedIt)
 		{
 			Ball &tempBall = detectedBalls_.at(*(pickedIt));
-			if (basket.cameraId_ == tempBall.cameraId_ && tempBall.centerX_ > basket.x && tempBall.centerX_ < basket.x + basket.width)
+			if (tempBall.centerX_ > basket.x && tempBall.centerX_ < basket.x + basket.width && tempBall.centerY_ < basket.y + basket.height
+			    && tempBall.centerY_ > basket.y - basket.height * 0.5)
 			{
 				basket.containedBalls_.emplace_back(*(pickedIt));
 			}
-			else
+			else if (tempBall.centerX_ >= basket.x + basket.width)
 			{
 				break;
 			}
@@ -63,23 +63,6 @@ void FrontDataProcessor::frontDataProcess()
 		std::sort(basket.containedBalls_.begin(), basket.containedBalls_.end(), [this](int index1, int index2) -> bool {
 			return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
 		});
-	}
-
-	//去重
-	for (auto it = baskets_.begin(); it != baskets_.end(); ++it)
-	{
-		if (it->cameraId_)
-		{
-			baskets_.erase(it, std::min(it + baskets_.size() - 5, baskets_.end()));
-			break;
-		}
-	}
-
-	//框个数过多，退出
-	if (baskets_.size() > 5)
-	{
-		isFullDetect_ = false;
-		return;
 	}
 }
 

@@ -46,7 +46,14 @@
 * **2024/1/30**
   * BackDataProcessor修改backDataProcess逻辑，大于两个球成排都认为是一排球
 * **2024/2/3**
-    * BackDataProcessor整体逻辑修改
+  * BackDataProcessor整体逻辑修改
+* **2024/3/4**
+  * BackDataProcessor修改backDataProcess逻辑，大于两个球成排都认为是一排球
+  * BackDataProcessor添加逻辑：checkDistance和positionRevise
+* **2024/3/13**
+* BackDataProcessor整体回滚
+* FrontDataProcessor修改frontDataProcess的逻辑错误，简化逻辑
+* 部分参数优化
 
 #### R2-GEN2
 

@@ -242,7 +242,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	{
 		if (it->checkDistance(*this))
 		{
-			it->positionRevise(*this, rsCameraArray);
+//			it->positionRevise(*this, rsCameraArray);
 			it++;
 		}
 		else
@@ -273,9 +273,9 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	{
 		detectMode_ = NO_BALL;
 	}
-	else if (inlinedBallsGroup_.empty())
+	else if (inlinedBallsGroup_.empty() || inlinedBallsGroup_.front().ballsIndex_.size() < 4)
 	{
-		detectMode_ = SCATTERED_BALL;
+		detectMode_ = SINGLE_BALL;
 
 		std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
 			Ball &ball1 = detectedBalls_.at(index1);
@@ -289,7 +289,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	}
 	else
 	{
-		detectMode_ = MATRIX_BALL;
+		detectMode_ = MULTIPLE_BALLS;
 	}
 }
 
@@ -298,7 +298,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 {
 	int data[17] = {0};
 	data[0] = detectMode_;
-	if (detectMode_ == SCATTERED_BALL)
+	if (detectMode_ == SINGLE_BALL)
 	{
 		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
 		data[1] = tempBall.cameraPosition_.x;
@@ -306,11 +306,10 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		data[3] = tempBall.cameraPosition_.z;
 		data[4] = newLabelNum_[tempBall.labelNum_];
 	}
-	else if (detectMode_ == MATRIX_BALL)
+	else if (detectMode_ == MULTIPLE_BALLS)
 	{
 		InlinedBalls &inlinedBalls = inlinedBallsGroup_.at(0);
 		int size = std::min(4, static_cast<int>(inlinedBalls.ballsIndex_.size()));
-		data[0] = size;
 		for (int i = 0; i < size; ++i)
 		{
 			Ball &tempBall = detectedBalls_.at(inlinedBalls.ballsIndex_.at(i));

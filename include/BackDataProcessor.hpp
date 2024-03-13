@@ -49,8 +49,8 @@ private:
 	enum DetectMode
 	{
 		NO_BALL = 0,
-		SCATTERED_BALL = 1,
-		MATRIX_BALL = 2
+		SINGLE_BALL = 1,
+		MULTIPLE_BALLS = 2
 	};
 
 	int detectMode_;
