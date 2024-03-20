@@ -11,11 +11,23 @@ private:
 	int imgWidth_;
 	int imgHeight_;
 	int framerate_;
-	float pixelOffset_[5][2] = {{0,  0},
+	float pixelOffset_[17][2] = {{0,  0},
 	                            {0,  3},
 	                            {0,  -3},
 	                            {3,  0},
-	                            {-3, 0}};//深度采样的像素坐标偏移量
+	                             {-3, 0},
+	                             {3,  3},
+	                             {-3, -3},
+	                             {3,  -3},
+	                             {-3, 3},
+	                             {0,  5},
+	                             {0,  -5},
+	                             {5,  0},
+	                             {-5, 0},
+	                             {5,  5},
+	                             {-5, -5},
+	                             {5,  -5},
+	                             {-5, 5}};//深度采样的像素坐标偏移量
 	float pitchAngleDegree_;//俯角相反数
 	float yawAngleDegree_;
 	bool pipeStarted_ = false;
@@ -31,8 +43,6 @@ private:
 	 * ⌊-sin(θ),          0,    cos(θ)  ⌋
 	 */
 	Mat_<float> yawRotateMatrix_ = Mat_<float>(3, 3);
-	rs2::context context_;
-	rs2::device_list deviceList_;
 	rs2::config config_;
 	rs2::align alignToColor_ = rs2::align(RS2_STREAM_COLOR);
 	rs2::pipeline pipe_;

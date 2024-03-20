@@ -33,8 +33,8 @@ void FrontDataProcessor::frontDataProcess()
 		}
 	}
 
-	//框个数不足，退出
-	if (baskets_.size() < 5)
+	//框个数不满足要求，退出
+	if (baskets_.size() != 5)
 	{
 		isFullDetect_ = false;
 		return;
@@ -46,15 +46,16 @@ void FrontDataProcessor::frontDataProcess()
 	auto pickedIt = pickedBallsIndex_.begin();
 	for (Basket &basket: baskets_)
 	{
-		//横向筛选 由于使用神经网络 不需要纵向筛选
+		//横向筛选
 		for (; pickedIt != pickedBallsIndex_.end(); ++pickedIt)
 		{
 			Ball &tempBall = detectedBalls_.at(*(pickedIt));
-			if (basket.cameraId_ == tempBall.cameraId_ && tempBall.centerX_ > basket.x && tempBall.centerX_ < basket.x + basket.width)
+			if (tempBall.centerX_ > basket.x && tempBall.centerX_ < basket.x + basket.width && tempBall.centerY_ < basket.y + basket.height
+			    && tempBall.centerY_ > basket.y - basket.height * 0.5)
 			{
 				basket.containedBalls_.emplace_back(*(pickedIt));
 			}
-			else
+			else if (tempBall.centerX_ >= basket.x + basket.width)
 			{
 				break;
 			}
@@ -63,23 +64,6 @@ void FrontDataProcessor::frontDataProcess()
 		std::sort(basket.containedBalls_.begin(), basket.containedBalls_.end(), [this](int index1, int index2) -> bool {
 			return detectedBalls_.at(index1).centerY_ > detectedBalls_.at(index2).centerY_;
 		});
-	}
-
-	//去重
-	for (auto it = baskets_.begin(); it != baskets_.end(); ++it)
-	{
-		if (it->cameraId_)
-		{
-			baskets_.erase(it, std::min(it + baskets_.size() - 5, baskets_.end()));
-			break;
-		}
-	}
-
-	//框个数过多，退出
-	if (baskets_.size() > 5)
-	{
-		isFullDetect_ = false;
-		return;
 	}
 }
 
@@ -91,7 +75,8 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 		for (int i = 0; i < 5; ++i)
 		{
 			int j = 0;
-			for (; j < baskets_.at(i).containedBalls_.size(); ++j)
+			int size = std::min(3, static_cast<int>(baskets_.at(i).containedBalls_.size()));
+			for (; j < size; ++j)
 			{
 				data[i + j * 5] = newLabelNum_[detectedBalls_.at(baskets_.at(i).containedBalls_.at(j)).labelNum_];
 			}
@@ -135,23 +120,23 @@ void FrontDataProcessor::drawBoxes(WideFieldCameraLoader *wideFieldCameraArray)
 				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 
-	for (Basket &basket: baskets_)
-	{
-		Mat &img = wideFieldCameraArray[basket.cameraId_].colorImg_;
-
-		rectangle(img, basket, GREEN, 2);
-		putText(img, std::to_string(basket.labelNum_), Point(basket.x, basket.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-		for (int index: basket.containedBalls_)
-		{
-			Ball &tempBall = detectedBalls_.at(index);
-
-			rectangle(img, tempBall, GREEN, 2);
-			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-		}
-	}
+//	for (Basket &basket: baskets_)
+//	{
+//		Mat &img = wideFieldCameraArray[basket.cameraId_].colorImg_;
+//
+//		rectangle(img, basket, GREEN, 2);
+//		putText(img, std::to_string(basket.labelNum_), Point(basket.x, basket.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+//		for (int index: basket.containedBalls_)
+//		{
+//			Ball &tempBall = detectedBalls_.at(index);
+//
+//			rectangle(img, tempBall, GREEN, 2);
+//			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+//		}
+//	}
 }
 
-void FrontDataProcessor::clearBallVectors()
+void FrontDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();

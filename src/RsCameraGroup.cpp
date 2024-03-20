@@ -21,6 +21,7 @@ void RsCameraGroup::groupInit()
 {
 	for (auto &&rsCamera: deviceList_)
 	{
+//		rsCamera.hardware_reset();
 		std::string serialNumber = rsCamera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 		int cameraId = 0;
 		if (serialNumbers_[cameraId] != serialNumber)

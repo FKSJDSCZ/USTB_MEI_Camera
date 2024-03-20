@@ -22,55 +22,51 @@ int main()
 	std::cout.tie(nullptr);
 
 	DataSender dataSender = DataSender(0);
-	BackDataProcessor backDataProcessor;
+//	BackDataProcessor backDataProcessor;
 	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("yolov5-best-fp16.engine", 0.4, 0.6, 0.4);
+	TrtEngineLoader trtEngineLoader = TrtEngineLoader("yolov5-best.engine", 0.4, 0.6, 0.4);
 #elif defined(WITH_OPENVINO)
-	OvEngineLoader ovEngineLoader = OvEngineLoader("yolov5-best-fp16.xml", "CPU", 0.4, 0.6, 0.4);
+	OvEngineLoader ovEngineLoader = OvEngineLoader("yolov5-best.xml", "CPU", 0.4, 0.2, 0.4);
 #endif
-	RsCameraGroup rsCameraGroup;
-//	WideFieldCameraGroup wideFieldCameraGroup;
+//	RsCameraGroup rsCameraGroup;
+	WideFieldCameraGroup wideFieldCameraGroup;
 
-	rsCameraGroup.detectRsCamera();
-	rsCameraGroup.groupInit();
-//	wideFieldCameraGroup.detectWideFieldCamera();
-//	wideFieldCameraGroup.groupInit();
+//	rsCameraGroup.detectRsCamera();
+//	rsCameraGroup.groupInit();
+	wideFieldCameraGroup.detectWideFieldCamera();
+	wideFieldCameraGroup.groupInit();
 
 	while (true)
 	{
 		//后场识别
-		rsCameraGroup.groupGetImg();
-#if defined(WITH_CUDA)
-		rsCameraGroup.groupInfer(trtEngineLoader, backDataProcessor);
-#elif defined(WITH_OPENVINO)
-		rsCameraGroup.groupInfer(ovEngineLoader, backDataProcessor);
-#endif
-
-		frontDataProcessor.detectedBalls_ = backDataProcessor.detectedBalls_;
-		frontDataProcessor.pickedBallsIndex_ = backDataProcessor.pickedBallsIndex_;
-
-		rsCameraGroup.groupDataProcess(backDataProcessor);
-		backDataProcessor.outputPosition(dataSender);
-#if defined(GRAPHIC_DEBUG)
-		rsCameraGroup.groupDrawBoxes(backDataProcessor);
-#endif
-		backDataProcessor.clearBallVectors();
+//		rsCameraGroup.groupGetImg();
+//#if defined(WITH_CUDA)
+//		rsCameraGroup.groupInfer(trtEngineLoader, backDataProcessor);
+//#elif defined(WITH_OPENVINO)
+//		rsCameraGroup.groupInfer(ovEngineLoader, backDataProcessor);
+//#endif
+//		rsCameraGroup.groupDataProcess(backDataProcessor);
+//		backDataProcessor.outputPosition(dataSender);
+//#if defined(GRAPHIC_DEBUG)
+//		rsCameraGroup.groupDrawBoxes(backDataProcessor);
+//#endif
+//		backDataProcessor.resetProcessor();
 
 		//前场识别
-//		wideFieldCameraGroup.groupGetImg();
-//#if defined(WITH_CUDA)
-//		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
-//#elif defined(WITH_OPENVINO)
-//		wideFieldCameraGroup.groupInfer(ovEngineLoader, frontDataProcessor);
-//#endif
+		wideFieldCameraGroup.groupGetImg();
+#if defined(WITH_CUDA)
+		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
+#elif defined(WITH_OPENVINO)
+		wideFieldCameraGroup.groupInfer(ovEngineLoader, frontDataProcessor);
+#endif
 		frontDataProcessor.frontDataProcess();
 		frontDataProcessor.outputPosition(dataSender);
-//#if defined(GRAPHIC_DEBUG)
-//		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
-//#endif
-		frontDataProcessor.clearBallVectors();
+#if defined(GRAPHIC_DEBUG)
+		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
+#endif
+		frontDataProcessor.resetProcessor();
 
 #if defined(WITH_SERIAL)
 		dataSender.sendData();

@@ -38,5 +38,6 @@ public:
 	//画图
 	void drawBoxes(RsCameraLoader *rsCameraArray);
 
-	void clearBallVectors();
+	//重置处理器
+	void resetProcessor();
 };

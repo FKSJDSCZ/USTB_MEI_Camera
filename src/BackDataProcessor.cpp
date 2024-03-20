@@ -68,7 +68,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 	}
 }
 
-void BackDataProcessor::clearBallVectors()
+void BackDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();

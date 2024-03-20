@@ -31,5 +31,6 @@ public:
 	//画图
 	void drawBoxes(WideFieldCameraLoader *wideFieldCameraArray);
 
-	void clearBallVectors();
+	//重置处理器
+	void resetProcessor();
 };

@@ -70,7 +70,7 @@ void OvEngineLoader::infer()
 	inferRequest_.wait();
 	auto end = std::chrono::system_clock::now();
 
-//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
 void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::vector<int> &pickedBallsIndex_, int cameraId)
