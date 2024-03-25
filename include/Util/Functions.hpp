@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Ball.hpp"
+#include "Entity/Ball.hpp"
 
 class Functions
 {

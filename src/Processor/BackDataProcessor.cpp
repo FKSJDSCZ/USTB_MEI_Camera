@@ -1,4 +1,4 @@
-#include "BackDataProcessor.hpp"
+#include "Processor/BackDataProcessor.hpp"
 
 BackDataProcessor::InlinedBalls::InlinedBalls(int index)
 {
@@ -242,7 +242,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	{
 		if (it->checkDistance(*this))
 		{
-//			it->positionRevise(*this, rsCameraArray);
+			it->positionRevise(*this, rsCameraArray);
 			it++;
 		}
 		else
@@ -320,7 +320,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		}
 	}
 	dataSender.writeToBuffer(0, 17, data);
-//	std::cout << "[Info] Selected " << inlinedBallsGroup_.size() << " lines of objects. Detect mode: " << data[0] << std::endl;
+	std::cout << "[Info] Selected " << inlinedBallsGroup_.size() << " lines of objects. Detect mode: " << data[0] << std::endl;
 }
 
 //画图

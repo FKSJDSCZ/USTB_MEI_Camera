@@ -1,4 +1,4 @@
-#include "RsCameraLoader.hpp"
+#include "CameraLoader/RsCameraLoader.hpp"
 
 RsCameraLoader::RsCameraLoader() = default;
 

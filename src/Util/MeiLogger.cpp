@@ -1,6 +1,6 @@
 #if defined(WITH_CUDA)
 
-#include "MeiLogger.hpp"
+#include "Util/MeiLogger.hpp"
 
 MeiLogger::MeiLogger(ILogger::Severity severity) : severity_(severity)
 {}

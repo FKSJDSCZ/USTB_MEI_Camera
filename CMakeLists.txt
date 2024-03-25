@@ -39,12 +39,13 @@ endif ()
 if (GRAPHIC_DEBUG)
     add_definitions(-DGRAPHIC_DEBUG)
 endif ()
+
 if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
 endif ()
 
 include_directories(include)
-file(GLOB SRC_FILES src/*.cpp)
+file(GLOB SRC_FILES src/*/*.cpp src/*.cpp)
 add_executable(${PROJECT_NAME}
         ${SRC_FILES}
         main.cpp

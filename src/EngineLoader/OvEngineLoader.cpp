@@ -1,6 +1,6 @@
 #if defined(WITH_OPENVINO)
 
-#include "OvEngineLoader.hpp"
+#include "EngineLoader/OvEngineLoader.hpp"
 
 OvEngineLoader::OvEngineLoader(std::string modelPath, std::string device = "CPU", float minObjectness = 0.4, float minConfidence = 0.5,
                                float maxIou = 0.4) : minObjectness_(minObjectness), minConfidence_(minConfidence), maxIou_(maxIou)
@@ -73,9 +73,9 @@ void OvEngineLoader::infer()
 //	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
-void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::vector<int> &pickedBallsIndex_, int cameraId)
+void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
 {
-	int detectedBallCount_ = detectedBalls_.size();
+	int detectedBallCount_ = detectedBalls.size();
 	float *ptr = inferRequest_.get_output_tensor().data<float>();
 
 	for (int i = 0; i < outputMaxNum_; ++i)
@@ -107,7 +107,7 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::v
 				ball.height = ptr[3] / imgRatio_;
 				ball.x = ball.centerX_ - ball.width * 0.5;
 				ball.y = ball.centerY_ - ball.height * 0.5;
-				detectedBalls_.push_back(ball);
+				detectedBalls.push_back(ball);
 			}
 		}
 		ptr += 5 + classNum_;
@@ -115,22 +115,29 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls_, std::v
 //	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 
 	//NMS 防止出现大框套小框
-	for (; detectedBallCount_ < detectedBalls_.size(); ++detectedBallCount_)
+	for (; detectedBallCount_ < detectedBalls.size(); ++detectedBallCount_)
 	{
 		bool pick = true;
-		for (int index: pickedBallsIndex_)
+		for (int index: pickedBallsIndex)
 		{
-			if (Functions::calcIou(detectedBalls_.at(detectedBallCount_), detectedBalls_.at(index)) > maxIou_)//两框重叠程度太高就抛弃一个
+			if (Functions::calcIou(detectedBalls.at(detectedBallCount_), detectedBalls.at(index)) > maxIou_)//两框重叠程度太高就抛弃一个
 			{
 				pick = false;
 			}
 		}
 		if (pick)
 		{
-			pickedBallsIndex_.push_back(detectedBallCount_);
+			pickedBallsIndex.push_back(detectedBallCount_);
 		}
 	}
-//	std::cout << "[Info] Picked " << pickedBallsIndex_.size() << " objects" << std::endl;
+//	std::cout << "[Info] Picked " << pickedBallsIndex.size() << " objects" << std::endl;
+}
+
+void OvEngineLoader::detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
+{
+	imgProcess(inputImg);
+	infer();
+	detectDataProcess(detectedBalls, pickedBallsIndex, cameraId);
 }
 
 #endif

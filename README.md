@@ -1,14 +1,12 @@
-# ROBOCON 2023
+# ROBOCON 2024
 
 ## 北京科技大学 MEI 竞技机器人团队
 
-### University of Science and Technology
-
-### MEI Contest Robot Team
+### MEI Contest Robot Team, University of Science and Technology Beijing
 
 ## 传感器组 R2摄像头工程源码
 
-### Project R2 Camera of Sensor Department
+### Project R2 Camera, Sensor Department
 
 ## 项目简介
 
@@ -51,14 +49,16 @@
   * BackDataProcessor修改backDataProcess逻辑，大于两个球成排都认为是一排球
   * BackDataProcessor添加逻辑：checkDistance和positionRevise
 * **2024/3/13**
-* BackDataProcessor整体回滚
-* FrontDataProcessor修改frontDataProcess的逻辑错误，简化逻辑
-* 部分参数优化
+    * BackDataProcessor整体回滚
+    * FrontDataProcessor修改frontDataProcess的逻辑错误，简化逻辑
+    * 部分参数优化
 
 #### R2-GEN2
 
 * **2024/1/23**
   * 新增r2-gen2分支，部分参数优化
+* **2024/3/20**
+    * FrontDataProcessor与r2-gen1同步
 
 ## 使用说明
 

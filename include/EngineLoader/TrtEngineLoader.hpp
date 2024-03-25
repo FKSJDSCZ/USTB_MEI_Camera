@@ -3,14 +3,16 @@
 #if defined(WITH_CUDA)
 
 #include <fstream>
-#include "Ball.hpp"
-#include "Functions.hpp"
+#include "IEngineLoader.hpp"
+#include "Entity/Ball.hpp"
+#include "Util/Functions.hpp"
+#include "Util/MeiLogger.hpp"
 #include "Constants.hpp"
-#include "MeiLogger.hpp"
 
 using namespace cv;
 
-class TrtEngineLoader
+class TrtEngineLoader :
+		public IEngineLoader
 {
 private:
 	nvinfer1::IRuntime *meiRuntime_ = nullptr;
@@ -49,13 +51,15 @@ public:
 	~TrtEngineLoader();
 
 	//图像预处理
-	void imgProcess(Mat inputImg);
+	void imgProcess(Mat inputImg) override;
 
 	// 推理
-	void infer();
+	void infer() override;
 
 	//后处理推理数据
-	void detectDataProcess(std::vector<Ball> &detectedBalls_, std::vector<int> &pickedBallsIndex_, int cameraId);
+	void detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) override;
+
+	void detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) override;
 };
 
 #endif

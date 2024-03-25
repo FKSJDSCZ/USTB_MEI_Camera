@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Basket.hpp"
-#include "DataSender.hpp"
-#include "WideFieldCameraLoader.hpp"
+#include "Entity/Basket.hpp"
+#include "Util/DataSender.hpp"
+#include "CameraLoader/WideFieldCameraLoader.hpp"
 #include "Constants.hpp"
 
 class FrontDataProcessor
@@ -16,20 +16,21 @@ private:
 		NEW_BASKET = 4,
 	};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
-	bool isFullDetect_ = false;
 
 public:
 	std::vector<Ball> detectedBalls_;
 	std::vector<int> pickedBallsIndex_;
 	std::vector<Basket> baskets_;
+	Rect_<int> basketRoi_ = Rect_<int>(0, 0, 0, 0);
+	const int padding_ = 80;
 
-	void frontDataProcess();
+	void frontDataProcess(int imgWidth, int imgHeight, bool detectRoi);
 
 	//数据输出
 	void outputPosition(DataSender &dataSender);
 
 	//画图
-	void drawBoxes(WideFieldCameraLoader *wideFieldCameraArray);
+	void drawBoxes(WideFieldCameraLoader &wideFieldCamera);
 
 	//重置处理器
 	void resetProcessor();
