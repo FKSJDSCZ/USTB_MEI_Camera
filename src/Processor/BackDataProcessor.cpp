@@ -245,14 +245,6 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 			it->positionRevise(*this, rsCameraArray);
 			it++;
 		}
-		else
-		{
-			for (int index: it->ballsIndex_)
-			{
-				pickedBallsIndex_.push_back(index);
-			}
-			inlinedBallsGroup_.erase(it);
-		}
 	}
 
 	//去除坐标无效的球。注：这一步不能放在positionRevise()之前
@@ -286,6 +278,19 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 			}
 			return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
 		});
+
+		if (!inlinedBallsGroup_.empty())
+		{
+			for (int index: inlinedBallsGroup_.front().ballsIndex_)
+			{
+				int labelNum = detectedBalls_.at(index).labelNum_;
+				if (labelNum == 0 || labelNum == 1)
+				{
+					pickedBallsIndex_.insert(pickedBallsIndex_.begin(), index);
+					break;
+				}
+			}
+		}
 	}
 	else
 	{
@@ -326,6 +331,19 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 //画图
 void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 {
+//	for (int &index: pickedBallsIndex_)
+//	{
+//		Ball &tempBall=detectedBalls_.at(index);
+//		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
+//
+//		rectangle(img, tempBall, RED, 2);
+//		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+//		             + " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
+//		             + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
+//		             + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
+//				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+//	}
+
 	for (int row = 0; row < inlinedBallsGroup_.size(); ++row)
 	{
 		for (int col = 0; col < inlinedBallsGroup_.at(row).ballsIndex_.size(); ++col)
