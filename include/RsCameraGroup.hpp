@@ -19,9 +19,9 @@ private:
 	rs2::context context_;
 	rs2::device_list deviceList_;
 	std::string serialNumbers_[2] = {"318122303126", "308222301027"};
-	Parameters parameters_[2] = {Parameters(170, -355, 255), Parameters(250, -615, 0)};
+	Parameters parameters_[2] = {Parameters(290, -310, 390), Parameters(230, -530, 340)};
 	float pitchAngleDegrees_[2] = {-45.0, 0};
-	float yawAngleDegrees_[2] = {-45.0, 0};
+	float yawAngleDegrees_[2] = {-30.0, 0};
 	bool enabled_[2] = {false, false};
 
 public:
