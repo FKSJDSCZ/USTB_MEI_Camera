@@ -48,7 +48,7 @@ private:
 public:
 	explicit TrtEngineLoader(std::string enginePath, float minObjectness, float minConfidence, float maxIou);
 
-	~TrtEngineLoader();
+	~TrtEngineLoader() override;
 
 	//图像预处理
 	void imgProcess(Mat inputImg) override;

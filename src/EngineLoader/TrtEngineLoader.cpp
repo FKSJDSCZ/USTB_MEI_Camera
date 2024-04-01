@@ -31,11 +31,8 @@ void TrtEngineLoader::loadEngine(std::string &enginePath_)
 		inputFileStream.close();
 	}
 	meiRuntime_ = nvinfer1::createInferRuntime(meiLogger);
-	assert(meiRuntime_ != nullptr);
 	meiCudaEngine_ = meiRuntime_->deserializeCudaEngine(modelStream, engineSize);//反序列化
-	assert(meiCudaEngine_ != nullptr);
 	meiExecutionContext_ = meiCudaEngine_->createExecutionContext();
-	assert(meiExecutionContext_ != nullptr);
 
 	delete[] modelStream;
 }
@@ -52,8 +49,8 @@ void TrtEngineLoader::setOutputSize()
 		outputSize_ *= out_dims.d[j];
 	}
 	batchSize_ = out_dims.d[0];
-	outputMaxNum_ = out_dims.d[1];
-	classNum_ = out_dims.d[2] - 5;
+	classNum_ = out_dims.d[1] - 4;
+	outputMaxNum_ = out_dims.d[2];
 }
 
 //分配相关内存
@@ -113,7 +110,7 @@ void TrtEngineLoader::infer()
 	cudaStreamSynchronize(meiCudaStream_);//流同步
 	auto end = std::chrono::system_clock::now();
 
-//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
 //后处理推理数据
@@ -123,37 +120,39 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::v
 	float *ptr = cpuOutputBuffer_;
 	for (int i = 0; i < outputMaxNum_; ++i)
 	{
-		float objectness = ptr[4];//网格单元中存在物体的概率（置信度）
-		if (objectness >= minObjectness_)
+		float boxData[classNum_ + 4];
+		for (int j = 0; j < classNum_ + 4; ++j)
 		{
-			int label = std::max_element(ptr + 5, ptr + 5 + classNum_) - (ptr + 5);
+			boxData[j] = ptr[j * outputMaxNum_];
+		}
+		float *objectness = std::max_element(boxData + 4, boxData + classNum_ + 4);
+		if (*objectness >= minObjectness_)
+		{
+			int label = objectness - (boxData + 4);
 			bool isInBasket = false;
-			float centerX = (ptr[0] - offsetX_) / imgRatio_;//减去填充像素
-			float centerY = (ptr[1] - offsetY_) / imgRatio_;
-			float confidence = ptr[label + 5] * objectness;//该物体属于某个标签类别的概率（置信度）
+			float centerX = (boxData[0] - offsetX_) / imgRatio_;//减去填充像素
+			float centerY = (boxData[1] - offsetY_) / imgRatio_;
+			float confidence = boxData[label + 4] * *objectness;//该物体属于某个标签类别的概率（置信度）
 
 			//判断是否在球框内（7cls）
-			if (classNum_ == 7)
+			if (label % 2)
 			{
-				if (label % 2)
-				{
-					label--;
-					isInBasket = true;
-				}
-				label /= 2;
+				label--;
+				isInBasket = true;
 			}
+			label /= 2;
 
 			if (confidence >= minConfidence_)
 			{
 				Ball ball = Ball(centerX, centerY, label, confidence, cameraId, isInBasket);
-				ball.width = ptr[2] / imgRatio_;
-				ball.height = ptr[3] / imgRatio_;
+				ball.width = boxData[2] / imgRatio_;
+				ball.height = boxData[3] / imgRatio_;
 				ball.x = ball.centerX_ - ball.width * 0.5;
 				ball.y = ball.centerY_ - ball.height * 0.5;
 				detectedBalls.push_back(ball);
 			}
 		}
-		ptr += 5 + classNum_;
+		ptr++;
 	}
 //	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 

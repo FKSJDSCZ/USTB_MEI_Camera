@@ -24,12 +24,12 @@ void OvEngineLoader::setOutputSize()
 	ov::Shape outputShape = inferRequest_.get_output_tensor().get_shape();
 	for (int i = 0; i < outputShape.size(); i++)
 	{
-		//以YOLOv5为例，输出1*25200*85
-		//其中1为batch_size，25200为先验框数量，85为：4（先验框参数，即centerX,centerY,width,height）+1（objectness，即boxConf）+80（classNum，即clsConf）
+		//以YOLOv5为例，输出1*25200*12
+		//其中1为batch_size，25200为先验框数量，12为：4（先验框参数，即centerX,centerY,width,height）+1（objectness，即boxConf）+7（classNum，即clsConf）
 		std::cout << "[Info] Output shape[" << i << "]: size = " << outputShape.at(i) << std::endl;
 	}
-	outputMaxNum_ = outputShape.at(1);
-	classNum_ = outputShape.at(2) - 5;
+	classNum_ = outputShape.at(1) - 4;
+	outputMaxNum_ = outputShape.at(2);
 }
 
 void OvEngineLoader::imgProcess(Mat inputImg)
@@ -80,37 +80,39 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::ve
 
 	for (int i = 0; i < outputMaxNum_; ++i)
 	{
-		float objectness = ptr[4];//网格单元中存在物体的概率（置信度）
-		if (objectness >= minObjectness_)
+		float boxData[classNum_ + 4];
+		for (int j = 0; j < classNum_ + 4; ++j)
 		{
-			int label = std::max_element(ptr + 5, ptr + 5 + classNum_) - (ptr + 5);
+			boxData[j] = ptr[j * outputMaxNum_];
+		}
+		float *objectness = std::max_element(boxData + 4, boxData + classNum_ + 4);
+		if (*objectness >= minObjectness_)
+		{
+			int label = objectness - (boxData + 4);
 			bool isInBasket = false;
-			float centerX = (ptr[0] - offsetX_) / imgRatio_;//减去填充像素
-			float centerY = (ptr[1] - offsetY_) / imgRatio_;
-			float confidence = ptr[label + 5] * objectness;//该物体属于某个标签类别的概率（置信度）
+			float centerX = (boxData[0] - offsetX_) / imgRatio_;//减去填充像素
+			float centerY = (boxData[1] - offsetY_) / imgRatio_;
+			float confidence = boxData[label + 4] * *objectness;//该物体属于某个标签类别的概率（置信度）
 
 			//判断是否在球框内（7cls）
-			if (classNum_ == 7)
+			if (label % 2)
 			{
-				if (label % 2)
-				{
-					label--;
-					isInBasket = true;
-				}
-				label /= 2;
+				label--;
+				isInBasket = true;
 			}
+			label /= 2;
 
 			if (confidence >= minConfidence_)
 			{
 				Ball ball = Ball(centerX, centerY, label, confidence, cameraId, isInBasket);
-				ball.width = ptr[2] / imgRatio_;
-				ball.height = ptr[3] / imgRatio_;
+				ball.width = boxData[2] / imgRatio_;
+				ball.height = boxData[3] / imgRatio_;
 				ball.x = ball.centerX_ - ball.width * 0.5;
 				ball.y = ball.centerY_ - ball.height * 0.5;
 				detectedBalls.push_back(ball);
 			}
 		}
-		ptr += 5 + classNum_;
+		ptr++;
 	}
 //	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 
@@ -130,7 +132,7 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::ve
 			pickedBallsIndex.push_back(detectedBallCount_);
 		}
 	}
-//	std::cout << "[Info] Picked " << pickedBallsIndex.size() << " objects" << std::endl;
+//	std::cout << "[Info] Picked " << pickedBallsIndex_.size() << " objects" << std::endl;
 }
 
 void OvEngineLoader::detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)

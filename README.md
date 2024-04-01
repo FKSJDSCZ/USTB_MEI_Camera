@@ -54,13 +54,16 @@
   * 部分参数优化
 * **2024/3/25**
   * 项目整体结构重构与优化
+* **2024/4/1**
+  * TrtEngineLoader与OvEngineLoader修改为适配YOLOv8模型
+  * WideFieldCameraGroup取消了二次识别逻辑
 
 #### R2-GEN2
 
 * **2024/1/23**
   * 新增r2-gen2分支，部分参数优化
 * **2024/3/20**
-    * FrontDataProcessor与r2-gen1同步
+  * FrontDataProcessor与r2-gen1同步
 
 ## 使用说明
 
