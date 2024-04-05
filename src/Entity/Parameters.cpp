@@ -1,4 +1,4 @@
-#include "Parameters.hpp"
+#include "Entity/Parameters.hpp"
 
 Parameters::Parameters() = default;
 

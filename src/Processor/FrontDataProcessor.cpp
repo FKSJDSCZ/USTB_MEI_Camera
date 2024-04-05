@@ -1,10 +1,8 @@
-#include "FrontDataProcessor.hpp"
+#include "Processor/FrontDataProcessor.hpp"
 
-void FrontDataProcessor::frontDataProcess()
+void FrontDataProcessor::frontDataProcess(int imgWidth, int imgHeight, bool detectRoi)
 {
-	//该函数涉及vector的erase()方法的多次调用 考虑到前场视野中球数量不会太多 O(n)复杂度不会有较大影响
-	//依据ROBOCON2023比赛规则 III区黄区不会出现球 故不会出现“球框的正后方有球的情况” 因此凭像素坐标+神经网络分离框内外球是可行的
-
+	//该函数涉及std::vector的erase()方法的多次调用 考虑到前场视野中球数量不会太多 O(n)复杂度的实现不会有较大影响
 	std::sort(pickedBallsIndex_.begin(), pickedBallsIndex_.end(), [this](int index1, int index2) -> bool {
 		Ball &ball1 = detectedBalls_.at(index1);
 		Ball &ball2 = detectedBalls_.at(index2);
@@ -33,15 +31,25 @@ void FrontDataProcessor::frontDataProcess()
 		}
 	}
 
-	//框个数不满足要求，退出
-	if (baskets_.size() != 5)
+	//没有框，退出
+	if (baskets_.empty())
 	{
-		isFullDetect_ = false;
+		return;
+	}
+	std::cout << "[Info] Successfully detected " << baskets_.size() << " basket(s)" << std::endl;
+
+	//检测框ROI
+	if (detectRoi)
+	{
+		int x = static_cast<int>(baskets_.front().x) - padding_;
+		int y = static_cast<int>(baskets_.front().y) - padding_;
+		int width = static_cast<int>(baskets_.back().x - baskets_.front().x + baskets_.back().width) + padding_ * 2;
+		int height = static_cast<int>(baskets_.front().height) + padding_ * 2;
+		basketRoi_ = Rect_<int>(x, y, width, height);
+		basketRoi_ &= Rect_<int>(0, 0, imgWidth, imgHeight);
 		return;
 	}
 
-	std::cout << "[Info] Successfully detected 5 baskets" << std::endl;
-	isFullDetect_ = true;
 	//筛选框内球
 	auto pickedIt = pickedBallsIndex_.begin();
 	for (Basket &basket: baskets_)
@@ -70,7 +78,7 @@ void FrontDataProcessor::frontDataProcess()
 void FrontDataProcessor::outputPosition(DataSender &dataSender)
 {
 	int data[15];
-	if (isFullDetect_)
+	if (baskets_.size() == 5)
 	{
 		for (int i = 0; i < 5; ++i)
 		{
@@ -105,12 +113,14 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 }
 
 //画图
-void FrontDataProcessor::drawBoxes(WideFieldCameraLoader *wideFieldCameraArray)
+void FrontDataProcessor::drawBoxes(WideFieldCameraLoader &wideFieldCamera)
 {
 	for (int index: pickedBallsIndex_)
 	{
-		Ball &tempBall = detectedBalls_.at(index);
-		Mat &img = wideFieldCameraArray[tempBall.cameraId_].colorImg_;
+		Ball tempBall = detectedBalls_.at(index);
+		tempBall.x += basketRoi_.x;
+		tempBall.y += basketRoi_.y;
+		Mat &img = wideFieldCamera.colorImg_;
 
 		rectangle(img, tempBall, RED, 2);
 		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
@@ -120,20 +130,25 @@ void FrontDataProcessor::drawBoxes(WideFieldCameraLoader *wideFieldCameraArray)
 				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 
-//	for (Basket &basket: baskets_)
-//	{
-//		Mat &img = wideFieldCameraArray[basket.cameraId_].colorImg_;
-//
-//		rectangle(img, basket, GREEN, 2);
-//		putText(img, std::to_string(basket.labelNum_), Point(basket.x, basket.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-//		for (int index: basket.containedBalls_)
-//		{
-//			Ball &tempBall = detectedBalls_.at(index);
-//
-//			rectangle(img, tempBall, GREEN, 2);
-//			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-//		}
-//	}
+	for (Basket &basket: baskets_)
+	{
+		Basket basket_ = basket;
+		basket_.x += basketRoi_.x;
+		basket_.y += basketRoi_.y;
+		Mat &img = wideFieldCamera.colorImg_;
+
+		rectangle(img, basket_, GREEN, 2);
+		putText(img, std::to_string(basket_.labelNum_), Point(basket_.x, basket_.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		for (int index: basket_.containedBalls_)
+		{
+			Ball tempBall = detectedBalls_.at(index);
+			tempBall.x += basketRoi_.x;
+			tempBall.y += basketRoi_.y;
+
+			rectangle(img, tempBall, GREEN, 2);
+			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		}
+	}
 }
 
 void FrontDataProcessor::resetProcessor()
@@ -141,4 +156,5 @@ void FrontDataProcessor::resetProcessor()
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();
 	baskets_.clear();
+	basketRoi_ = Rect_<int>(0, 0, 0, 0);
 }

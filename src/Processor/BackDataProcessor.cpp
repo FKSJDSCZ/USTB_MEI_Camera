@@ -1,4 +1,4 @@
-#include "BackDataProcessor.hpp"
+#include "Processor/BackDataProcessor.hpp"
 
 void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 {
@@ -8,7 +8,7 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		rsCameraArray[tempBall.cameraId_].getCameraPosition(tempBall.centerX_, tempBall.centerY_, tempBall.cameraPosition_);
 		tempBall.toMillimeter();//转毫米
 		tempBall.offsetToEncodingDisk(rsCameraArray[tempBall.cameraId_].parameters_);//偏移到码盘
-		tempBall.distance_ = Functions::calcDistance(tempBall.cameraPosition_, Point3f(0, 0, 0));
+		tempBall.distance_ = Functions::calcDistance3f(tempBall.cameraPosition_, Point3f(0, 0, 0));
 	}
 
 	//删除框内球和框

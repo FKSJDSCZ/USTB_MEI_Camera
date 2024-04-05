@@ -4,11 +4,14 @@
 
 #include "openvino/openvino.hpp"
 #include "opencv2/opencv.hpp"
-#include "Ball.hpp"
-#include "Functions.hpp"
+
+#include "IEngineLoader.hpp"
+#include "Entity/Ball.hpp"
+#include "Util/Functions.hpp"
 #include "Constants.hpp"
 
-class OvEngineLoader
+class OvEngineLoader :
+		public IEngineLoader
 {
 private:
 	ov::InferRequest inferRequest_;
@@ -27,14 +30,16 @@ private:
 
 	void setOutputSize();
 
+	void imgProcess(Mat inputImg) override;
+
+	void infer() override;
+
+	void detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) override;
+
 public:
 	OvEngineLoader(std::string modelPath, std::string device, float minObjectness, float minConfidence, float maxIou);
 
-	void imgProcess(Mat inputImg);
-
-	void infer();
-
-	void detectDataProcess(std::vector<Ball> &detectedBalls_, std::vector<int> &pickedBallsIndex_, int cameraId);
+	void detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) override;
 };
 
 #endif

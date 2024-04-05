@@ -1,23 +1,14 @@
-#include "DataSender.hpp"
-#include "BackDataProcessor.hpp"
-#include "FrontDataProcessor.hpp"
-
-#if defined(WITH_CUDA)
-
-#include "TrtEngineLoader.hpp"
-
-#elif defined(WITH_OPENVINO)
-
-#include "OvEngineLoader.hpp"
-
-#endif
-
-#include "RsCameraGroup.hpp"
-#include "WideFieldCameraGroup.hpp"
+#include "Util/DataSender.hpp"
+#include "Processor/BackDataProcessor.hpp"
+#include "Processor/FrontDataProcessor.hpp"
+#include "EngineLoader/IEngineLoader.hpp"
+#include "EngineLoader/TrtEngineLoader.hpp"
+#include "EngineLoader/OvEngineLoader.hpp"
+#include "CameraManager/RsCameraGroup.hpp"
+#include "CameraManager/WideFieldCameraGroup.hpp"
 
 int main()
 {
-	//standard output for debug only
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
 
@@ -26,9 +17,9 @@ int main()
 //	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader trtEngineLoader = TrtEngineLoader("yolov5s-best.engine", 0.4, 0.6, 0.4);
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-best.engine", 0.4, 0.6, 0.4);
 #elif defined(WITH_OPENVINO)
-	OvEngineLoader ovEngineLoader = OvEngineLoader("yolov5s-best.xml", "CPU", 0.4, 0.6, 0.4);
+	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-best.xml", "CPU", 0.4, 0.6, 0.4);
 #endif
 	RsCameraGroup rsCameraGroup;
 //	WideFieldCameraGroup wideFieldCameraGroup;
@@ -40,13 +31,8 @@ int main()
 
 	while (true)
 	{
-		//后场识别
-		rsCameraGroup.groupGetImg();
-#if defined(WITH_CUDA)
-		rsCameraGroup.groupInfer(trtEngineLoader, backDataProcessor);
-#elif defined(WITH_OPENVINO)
-		rsCameraGroup.groupInfer(ovEngineLoader, backDataProcessor);
-#endif
+		//back
+		rsCameraGroup.groupDetect(engineLoader, backDataProcessor);
 		rsCameraGroup.groupDataProcess(backDataProcessor);
 		backDataProcessor.outputPosition(dataSender);
 #if defined(GRAPHIC_DEBUG)
@@ -54,20 +40,15 @@ int main()
 #endif
 		backDataProcessor.resetProcessor();
 
-		//前场识别
-//		wideFieldCameraGroup.groupGetImg();
-//#if defined(WITH_CUDA)
-//		wideFieldCameraGroup.groupInfer(trtEngineLoader, frontDataProcessor);
-//#elif defined(WITH_OPENVINO)
-//		wideFieldCameraGroup.groupInfer(ovEngineLoader, frontDataProcessor);
-//#endif
-//		frontDataProcessor.frontDataProcess();
+		//front
+//		wideFieldCameraGroup.groupDetect(engineLoader, frontDataProcessor);
 //		frontDataProcessor.outputPosition(dataSender);
 //#if defined(GRAPHIC_DEBUG)
 //		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
 //#endif
 //		frontDataProcessor.resetProcessor();
 
+		//serial
 #if defined(WITH_SERIAL)
 		dataSender.sendData();
 #endif

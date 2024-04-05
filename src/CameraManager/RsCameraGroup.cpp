@@ -1,4 +1,4 @@
-#include "RsCameraGroup.hpp"
+#include "CameraManager/RsCameraGroup.hpp"
 
 void RsCameraGroup::detectRsCamera()
 {
@@ -32,50 +32,25 @@ void RsCameraGroup::groupInit()
 		rsCamerasArray_[cameraId].init(serialNumber);
 		enabled_[cameraId] = true;
 
+//		std::vector<rs2::sensor> sensors = rsCamera.query_sensors();
+//		rs2::color_sensor colorSensor = rs2::color_sensor(sensors[1]);
+//		colorSensor.set_option(RS2_OPTION_HUE, 10);
+
 		std::cout << "[Info] Realsense camera " << cameraId << " connected. Serial number: " << serialNumber << std::endl;
 	}
 }
 
-void RsCameraGroup::groupGetImg()
+void RsCameraGroup::groupDetect(IEngineLoader &engineLoader, BackDataProcessor &backDataProcessor)
 {
 	for (int i = 0; i < 2; ++i)
 	{
 		if (enabled_[i])
 		{
 			rsCamerasArray_[i].getImg();
+			engineLoader.detect(rsCamerasArray_[i].colorImg_, backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
 		}
 	}
 }
-
-#if defined(WITH_CUDA)
-void RsCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, BackDataProcessor &backDataProcessor)
-{
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			trtEngineLoader.imgProcess(rsCamerasArray_[i].colorImg_);
-			trtEngineLoader.infer();
-			trtEngineLoader.detectDataProcess(backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
-		}
-	}
-}
-#elif defined(WITH_OPENVINO)
-
-void RsCameraGroup::groupInfer(OvEngineLoader &ovEngineLoader, BackDataProcessor &backDataProcessor)
-{
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			ovEngineLoader.imgProcess(rsCamerasArray_[i].colorImg_);
-			ovEngineLoader.infer();
-			ovEngineLoader.detectDataProcess(backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
-		}
-	}
-}
-
-#endif
 
 void RsCameraGroup::groupDataProcess(BackDataProcessor &backDataProcessor)
 {

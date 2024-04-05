@@ -1,4 +1,4 @@
-#include "Basket.hpp"
+#include "Entity/Basket.hpp"
 
 Basket::Basket(Ball ball) : Ball(ball)
 {}

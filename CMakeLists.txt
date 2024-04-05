@@ -39,6 +39,7 @@ endif ()
 if (GRAPHIC_DEBUG)
     add_definitions(-DGRAPHIC_DEBUG)
 endif ()
+
 if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
 endif ()

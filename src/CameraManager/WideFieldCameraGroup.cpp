@@ -1,8 +1,9 @@
-#include "WideFieldCameraGroup.hpp"
+#include "CameraManager/WideFieldCameraGroup.hpp"
 
 void WideFieldCameraGroup::detectWideFieldCamera()
 {
 	int index = 0;
+	std::string info;
 	v4l2_capability cap{};
 	struct stat statInfo{};
 	struct group *group_;
@@ -24,96 +25,47 @@ void WideFieldCameraGroup::detectWideFieldCamera()
 		int fd = open(cameraFilePath.c_str(), O_RDONLY);
 		ioctl(fd, VIDIOC_QUERYCAP, &cap);
 
-		std::string info = std::string(reinterpret_cast<char *>(cap.card));
-		for (int i = 0; i < 2; ++i)
-		{
-			if (info == cardInfo_[i])
-			{
-				enabled_[i] = true;
-				devIndex_[i] = index;
-				break;
-			}
-		}
-		index += 2;
+		info = std::string(reinterpret_cast<char *>(cap.card));
+		devIndex_ = index;
+		break;
 	}
 
-	if (enabled_[0] ^ enabled_[1])
+	if (info.empty())
 	{
-		std::cerr << "[Warning] Detected 1 wide field camera successfully. Please connect more cameras" << std::endl;
-	}
-	else if (enabled_[0])
-	{
-		std::cout << "[Info] Detected 2 wide field cameras successfully" << std::endl;
+		throw std::runtime_error("[Error] No wide field camera detected");
 	}
 	else
 	{
-		throw std::runtime_error("[Error] No wide field camera detected");
+		std::cout << "[Info] Wide field camera " << info << " connected" << std::endl;
 	}
 }
 
 void WideFieldCameraGroup::groupInit()
 {
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			wideFieldCameraArray_[i] = WideFieldCameraLoader();
-			wideFieldCameraArray_[i].init(devIndex_[i]);
-
-			std::cout << "[Info] Wide field camera " << i << " connected. Card info: " << cardInfo_[i] << std::endl;
-		}
-	}
+	wideFieldCamera_ = WideFieldCameraLoader();
+	wideFieldCamera_.init(devIndex_);
 }
 
-void WideFieldCameraGroup::groupGetImg()
+void WideFieldCameraGroup::groupDetect(IEngineLoader &engineLoader, FrontDataProcessor &frontDataProcessor)
 {
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			wideFieldCameraArray_[i].getImg();
-		}
-	}
-}
+	wideFieldCamera_.getImg();
+	engineLoader.detect(wideFieldCamera_.colorImg_, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
 
-#if defined(WITH_CUDA)
-void WideFieldCameraGroup::groupInfer(TrtEngineLoader &trtEngineLoader, FrontDataProcessor &frontDataProcessor)
-{
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			trtEngineLoader.imgProcess(wideFieldCameraArray_[i].colorImg_);
-			trtEngineLoader.infer();
-			trtEngineLoader.detectDataProcess(frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, i);
-		}
-	}
+	frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
+//	if (!frontDataProcessor.baskets_.empty())
+//	{
+//		frontDataProcessor.detectedBalls_.clear();
+//		frontDataProcessor.pickedBallsIndex_.clear();
+//		frontDataProcessor.baskets_.clear();
+//
+//		Mat roi = wideFieldCamera_.colorImg_(frontDataProcessor.basketRoi_);
+//		engineLoader.detect(roi, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
+//		frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
+//	}
 }
-#elif defined(WITH_OPENVINO)
-
-void WideFieldCameraGroup::groupInfer(OvEngineLoader &ovEngineLoader, FrontDataProcessor &frontDataProcessor)
-{
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			ovEngineLoader.imgProcess(wideFieldCameraArray_[i].colorImg_);
-			ovEngineLoader.infer();
-			ovEngineLoader.detectDataProcess(frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, i);
-		}
-	}
-}
-
-#endif
 
 void WideFieldCameraGroup::groupDrawBoxes(FrontDataProcessor &frontDataProcessor)
 {
-	frontDataProcessor.drawBoxes(wideFieldCameraArray_);
-	for (int i = 0; i < 2; ++i)
-	{
-		if (enabled_[i])
-		{
-			imshow("Wide field camera " + std::to_string(i), wideFieldCameraArray_[i].colorImg_);
-		}
-	}
+	frontDataProcessor.drawBoxes(wideFieldCamera_);
+	imshow("Wide field camera 0", wideFieldCamera_.colorImg_);
 }

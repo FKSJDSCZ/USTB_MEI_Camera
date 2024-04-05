@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Ball.hpp"
-#include "RsCameraLoader.hpp"
-#include "Functions.hpp"
-#include "DataSender.hpp"
+#include "Entity/Ball.hpp"
+#include "CameraLoader/RsCameraLoader.hpp"
+#include "Util/Functions.hpp"
+#include "Util/DataSender.hpp"
 #include "Constants.hpp"
 
 class BackDataProcessor
