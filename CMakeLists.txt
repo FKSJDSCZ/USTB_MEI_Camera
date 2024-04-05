@@ -44,7 +44,7 @@ if (WITH_SERIAL)
 endif ()
 
 include_directories(include)
-file(GLOB SRC_FILES src/*.cpp)
+file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(${PROJECT_NAME}
         ${SRC_FILES}
         main.cpp

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "librealsense2/rs.hpp"
-#include "Parameters.hpp"
+#include "Entity/Parameters.hpp"
 
 using namespace cv;
 
@@ -12,9 +12,9 @@ private:
 	int imgHeight_;
 	int framerate_;
 	float pixelOffset_[17][2] = {{0,  0},
-	                            {0,  3},
-	                            {0,  -3},
-	                            {3,  0},
+	                             {0,  3},
+	                             {0,  -3},
+	                             {3,  0},
 	                             {-3, 0},
 	                             {3,  3},
 	                             {-3, -3},

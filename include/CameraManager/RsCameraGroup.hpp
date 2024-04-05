@@ -1,17 +1,17 @@
 #pragma once
 
-#include "RsCameraLoader.hpp"
+#include "CameraLoader/RsCameraLoader.hpp"
 
 #if defined(WITH_CUDA)
 
-#include "TrtEngineLoader.hpp"
+#include "EngineLoader/TrtEngineLoader.hpp"
 #elif defined(WITH_OPENVINO)
 
-#include "OvEngineLoader.hpp"
+#include "EngineLoader/OvEngineLoader.hpp"
 
 #endif
 
-#include "BackDataProcessor.hpp"
+#include "Processor/BackDataProcessor.hpp"
 
 class RsCameraGroup
 {
