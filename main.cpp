@@ -13,40 +13,40 @@ int main()
 	std::cout.tie(nullptr);
 
 	DataSender dataSender = DataSender(0);
-//	BackDataProcessor backDataProcessor;
-	FrontDataProcessor frontDataProcessor;
+	BackDataProcessor backDataProcessor;
+//	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
 	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-best.engine", 0.4, 0.6, 0.4);
 #elif defined(WITH_OPENVINO)
 	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-best.xml", "CPU", 0.4, 0.6, 0.4);
 #endif
-//	RsCameraGroup rsCameraGroup;
-	WideFieldCameraGroup wideFieldCameraGroup;
+	RsCameraGroup rsCameraGroup;
+//	WideFieldCameraGroup wideFieldCameraGroup;
 
-//	rsCameraGroup.detectRsCamera();
-//	rsCameraGroup.groupInit();
-	wideFieldCameraGroup.detectWideFieldCamera();
-	wideFieldCameraGroup.groupInit();
+	rsCameraGroup.detectRsCamera();
+	rsCameraGroup.groupInit();
+//	wideFieldCameraGroup.detectWideFieldCamera();
+//	wideFieldCameraGroup.groupInit();
 
 	while (true)
 	{
 		//back
-//		rsCameraGroup.groupDetect(engineLoader, backDataProcessor);
-//		rsCameraGroup.groupDataProcess(backDataProcessor);
-//		backDataProcessor.outputPosition(dataSender);
-//#if defined(GRAPHIC_DEBUG)
-//		rsCameraGroup.groupDrawBoxes(backDataProcessor);
-//#endif
-//		backDataProcessor.resetProcessor();
+		rsCameraGroup.groupDetect(engineLoader, backDataProcessor);
+		rsCameraGroup.groupDataProcess(backDataProcessor);
+		backDataProcessor.outputPosition(dataSender);
+#if defined(GRAPHIC_DEBUG)
+		rsCameraGroup.groupDrawBoxes(backDataProcessor);
+#endif
+		backDataProcessor.resetProcessor();
 
 		//front
-		wideFieldCameraGroup.groupDetect(engineLoader, frontDataProcessor);
-		frontDataProcessor.outputPosition(dataSender);
-#if defined(GRAPHIC_DEBUG)
-		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
-#endif
-		frontDataProcessor.resetProcessor();
+//		wideFieldCameraGroup.groupDetect(engineLoader, frontDataProcessor);
+//		frontDataProcessor.outputPosition(dataSender);
+//#if defined(GRAPHIC_DEBUG)
+//		wideFieldCameraGroup.groupDrawBoxes(frontDataProcessor);
+//#endif
+//		frontDataProcessor.resetProcessor();
 
 		//serial
 #if defined(WITH_SERIAL)

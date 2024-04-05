@@ -331,18 +331,18 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 //画图
 void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 {
-//	for (int &index: pickedBallsIndex_)
-//	{
-//		Ball &tempBall=detectedBalls_.at(index);
-//		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
-//
-//		rectangle(img, tempBall, RED, 2);
-//		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
+	for (int &index: pickedBallsIndex_)
+	{
+		Ball &tempBall = detectedBalls_.at(index);
+		Mat &img = rsCameraArray[tempBall.cameraId_].colorImg_;
+
+		rectangle(img, tempBall, RED, 2);
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
 //		             + " x: " + std::to_string(tempBall.cameraPosition_.x).substr(0, 6)
 //		             + " y: " + std::to_string(tempBall.cameraPosition_.y).substr(0, 6)
 //		             + " z: " + std::to_string(tempBall.cameraPosition_.z).substr(0, 6)
-//				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-//	}
+				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+	}
 
 	for (int row = 0; row < inlinedBallsGroup_.size(); ++row)
 	{

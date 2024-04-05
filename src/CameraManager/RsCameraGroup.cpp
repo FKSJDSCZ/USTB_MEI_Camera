@@ -32,6 +32,10 @@ void RsCameraGroup::groupInit()
 		rsCamerasArray_[cameraId].init(serialNumber);
 		enabled_[cameraId] = true;
 
+//		std::vector<rs2::sensor> sensors = rsCamera.query_sensors();
+//		rs2::color_sensor colorSensor = rs2::color_sensor(sensors[1]);
+//		colorSensor.set_option(RS2_OPTION_HUE, 10);
+
 		std::cout << "[Info] Realsense camera " << cameraId << " connected. Serial number: " << serialNumber << std::endl;
 	}
 }
