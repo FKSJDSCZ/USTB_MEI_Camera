@@ -9,10 +9,10 @@ class RsCameraGroup
 private:
 	rs2::context context_;
 	rs2::device_list deviceList_;
-	std::string serialNumbers_[2] = {"318122303126", "308222301027"};
-	Parameters parameters_[2] = {Parameters(200, -615, 410), Parameters(210, -490, 355)};
+	std::string serialNumbers_[2] = {"308222301027", "318122303126"};
+	Parameters parameters_[2] = {Parameters(270, -605, 415), Parameters(210, -490, 355)};
 	float pitchAngleDegrees_[2] = {-50.0, -15.0};
-	float yawAngleDegrees_[2] = {-20.0, -30.0};
+	float yawAngleDegrees_[2] = {-26.0, -30.0};
 	bool enabled_[2] = {false, false};
 
 public:
