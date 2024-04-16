@@ -17,9 +17,9 @@ int main()
 //	FrontDataProcessor frontDataProcessor;
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-best.engine", 0.4, 0.6, 0.4);
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-best.engine", 0.4, 0.2, 0.4);
 #elif defined(WITH_OPENVINO)
-	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-best.xml", "CPU", 0.4, 0.6, 0.4);
+	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-best.xml", "CPU", 0.4, 0.2, 0.4);
 #endif
 	RsCameraGroup rsCameraGroup;
 //	WideFieldCameraGroup wideFieldCameraGroup;
