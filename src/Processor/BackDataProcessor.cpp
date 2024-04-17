@@ -11,11 +11,11 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		tempBall.distance_ = Functions::calcDistance3f(tempBall.cameraPosition_, Point3f(0, 0, 0));
 	}
 
-	//删除框内球和框
+	//删除框内球、框和坐标无效的球
 	for (auto it = pickedBallsIndex_.begin(); it != pickedBallsIndex_.end();)
 	{
 		Ball &tempBall = detectedBalls_.at(*(it));
-		if (tempBall.isInBasket_ || tempBall.labelNum_ == 3)
+		if (tempBall.isInBasket_ || tempBall.labelNum_ == 3 || rsCameraArray[tempBall.cameraId_].parameters_.offsetPoint == tempBall.cameraPosition_)
 		{
 			pickedBallsIndex_.erase(it);
 		}
@@ -33,6 +33,23 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 		}
 		return ballPriority_[detectedBalls_.at(index1).labelNum_] < ballPriority_[detectedBalls_.at(index2).labelNum_];
 	});
+
+	//判断前进路线上是否有球
+	if (!pickedBallsIndex_.empty())
+	{
+		Point3f firstBallPosition = detectedBalls_.at(pickedBallsIndex_.front()).cameraPosition_;
+		float leftLimit = std::min(-ROBOT_WIDTH_LIMIT, firstBallPosition.x);
+		float rightLimit = std::max(ROBOT_WIDTH_LIMIT, firstBallPosition.x);
+		for (int index: pickedBallsIndex_)
+		{
+			Point3f &cameraPosition = detectedBalls_.at(index).cameraPosition_;
+			if (cameraPosition.x > leftLimit && cameraPosition.x < rightLimit && cameraPosition.z < firstBallPosition.z)
+			{
+				haveBallInFront_ = true;
+				break;
+			}
+		}
+	}
 }
 
 //数据输出
@@ -41,7 +58,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 	int data[4] = {0};
 	if (!pickedBallsIndex_.empty())
 	{
-		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.at(0));
+		Ball &tempBall = detectedBalls_.at(pickedBallsIndex_.front());
 		Point3i cameraPosition = tempBall.cameraPosition_;
 
 		data[0] = cameraPosition.x;
@@ -50,6 +67,7 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 		data[3] = newLabelNum_[tempBall.labelNum_];
 	}
 	dataSender.writeToBuffer(0, 4, data);
+	dataSender.writeToBuffer(19, 1, (int *) &haveBallInFront_);
 }
 
 //画图
@@ -72,4 +90,5 @@ void BackDataProcessor::resetProcessor()
 {
 	detectedBalls_.clear();
 	pickedBallsIndex_.clear();
+	haveBallInFront_ = false;
 }

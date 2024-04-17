@@ -23,6 +23,7 @@ private:
 		NEW_BLUE_BALL = 2,
 		NEW_BASKET = 3,
 	};
+	bool haveBallInFront_ = false;
 	int ballPriority_[4] = {RED_BALL, BLUE_BALL, PURPLE_BALL, BASKET};
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
 
