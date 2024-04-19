@@ -47,7 +47,7 @@ void RsCameraGroup::groupDetect(IEngineLoader &engineLoader, BackDataProcessor &
 		if (enabled_[i])
 		{
 			rsCamerasArray_[i].getImg();
-			engineLoader.detect(rsCamerasArray_[i].colorImg_, backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
+			engineLoader.detect(rsCamerasArray_[i].colorImg_, backDataProcessor.pickedBalls, i);
 		}
 	}
 }

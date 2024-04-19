@@ -13,23 +13,23 @@ private:
 	class InlinedBalls
 	{
 	private:
-		void sortLinedBalls(BackDataProcessor &backDataProcessor);
+		void sortLinedBalls();
 
 	public:
 		float ballsCenterX_;
 		float ballsCenterY_;
 		double gradient_;
-		std::vector<int> ballsIndex_;
+		std::vector<Ball> balls_;
 
-		InlinedBalls(int index);
+		explicit InlinedBalls(Ball &ball);
 
-		int appendBall(int index, BackDataProcessor &backDataProcessor);
+		int appendBall(Ball &targetBall);
 
-		void calcBallsCenter(BackDataProcessor &backDataProcessor);
+		void calcBallsCenter();
 
-		bool checkDistance(BackDataProcessor &backDataProcessor);
+		bool checkDistance();
 
-		void positionRevise(BackDataProcessor &backDataProcessor, RsCameraLoader *rsCameraArray);
+		void positionRevise(RsCameraLoader *rsCameraArray);
 	};
 
 	enum PriorityTag
@@ -58,9 +58,8 @@ private:
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
 
 public:
-	std::vector<Ball> detectedBalls_;
-	std::vector<int> pickedBallsIndex_;
-	std::vector<int> candidateBalls_;
+	std::vector<Ball> pickedBalls;
+	std::vector<Ball> candidateBalls_;
 	std::vector<InlinedBalls> inlinedBallsGroup_;
 
 	void backDataProcess(RsCameraLoader *rsCameraArray);

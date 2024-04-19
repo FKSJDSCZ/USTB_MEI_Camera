@@ -18,13 +18,10 @@ private:
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
 
 public:
-	std::vector<Ball> detectedBalls_;
-	std::vector<int> pickedBallsIndex_;
+	std::vector<Ball> pickedBalls_;
 	std::vector<Basket> baskets_;
-	Rect_<int> basketRoi_ = Rect_<int>(0, 0, 0, 0);
-	const int padding_ = 80;
 
-	void frontDataProcess(int imgWidth, int imgHeight, bool detectRoi);
+	void frontDataProcess(int imgWidth, int imgHeight);
 
 	//数据输出
 	void outputPosition(DataSender &dataSender);

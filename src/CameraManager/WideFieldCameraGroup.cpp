@@ -51,19 +51,9 @@ void WideFieldCameraGroup::groupInit()
 void WideFieldCameraGroup::groupDetect(IEngineLoader &engineLoader, FrontDataProcessor &frontDataProcessor)
 {
 	wideFieldCamera_.getImg();
-	engineLoader.detect(wideFieldCamera_.colorImg_, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
+	engineLoader.detect(wideFieldCamera_.colorImg_, frontDataProcessor.pickedBalls_, 0);
 
-	frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
-//	if (!frontDataProcessor.baskets_.empty())
-//	{
-//		frontDataProcessor.detectedBalls_.clear();
-//		frontDataProcessor.pickedBallsIndex_.clear();
-//		frontDataProcessor.baskets_.clear();
-//
-//		Mat roi = wideFieldCamera_.colorImg_(frontDataProcessor.basketRoi_);
-//		engineLoader.detect(roi, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
-//		frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
-//	}
+	frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows);
 }
 
 void WideFieldCameraGroup::groupDrawBoxes(FrontDataProcessor &frontDataProcessor)

@@ -2,8 +2,8 @@
 
 #include "EngineLoader/OvEngineLoader.hpp"
 
-OvEngineLoader::OvEngineLoader(std::string modelPath, std::string device = "CPU", float minObjectness = 0.4, float minConfidence = 0.5,
-                               float maxIou = 0.4) : minObjectness_(minObjectness), minConfidence_(minConfidence), maxIou_(maxIou)
+OvEngineLoader::OvEngineLoader(std::string modelPath, std::string device = "CPU", float minConfidence = 0.5, float maxIou = 0.4) :
+		minConfidence_(minConfidence), maxIou_(maxIou)
 {
 	inputWidth_ = 640;
 	inputHeight_ = 640;
@@ -70,76 +70,84 @@ void OvEngineLoader::infer()
 	inferRequest_.wait();
 	auto end = std::chrono::system_clock::now();
 
-//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+	//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
-void OvEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
+void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId)
 {
-	int detectedBallCount_ = detectedBalls.size();
-	float *ptr = inferRequest_.get_output_tensor().data<float>();
+	detectedBalls_.clear();
+	auto *ptr = inferRequest_.get_output_tensor().data<float>();
 
 	for (int i = 0; i < outputMaxNum_; ++i)
 	{
+		// boxData = [centerX, centerY, width, height, clsConf0, clsConf1, ...]
 		float boxData[classNum_ + 4];
 		for (int j = 0; j < classNum_ + 4; ++j)
 		{
 			boxData[j] = ptr[j * outputMaxNum_];
 		}
-		float *objectness = std::max_element(boxData + 4, boxData + classNum_ + 4);
-		if (*objectness >= minObjectness_)
+
+		float *maxClassConf = std::max_element(boxData + 4, boxData + classNum_ + 4);
+		if (*maxClassConf < minConfidence_)
 		{
-			int label = objectness - (boxData + 4);
-			bool isInBasket = false;
-			float centerX = (boxData[0] - offsetX_) / imgRatio_;//减去填充像素
-			float centerY = (boxData[1] - offsetY_) / imgRatio_;
-			float confidence = boxData[label + 4] * *objectness;//该物体属于某个标签类别的概率（置信度）
-
-			//判断是否在球框内（7cls）
-			if (label % 2)
-			{
-				label--;
-				isInBasket = true;
-			}
-			label /= 2;
-
-			if (confidence >= minConfidence_)
-			{
-				Ball ball = Ball(centerX, centerY, label, confidence, cameraId, isInBasket);
-				ball.width = boxData[2] / imgRatio_;
-				ball.height = boxData[3] / imgRatio_;
-				ball.x = ball.centerX_ - ball.width * 0.5;
-				ball.y = ball.centerY_ - ball.height * 0.5;
-				detectedBalls.push_back(ball);
-			}
+			continue;
 		}
+
+		int labelNum = maxClassConf - (boxData + 4);
+		bool isInBasket = false;
+		if (labelNum % 2)
+		{
+			labelNum--;
+			isInBasket = true;
+		}
+		labelNum /= 2;
+
+		Ball ball = Ball(pickedBalls.size(),
+		                 (boxData[0] - offsetX_) / imgRatio_,
+		                 (boxData[1] - offsetY_) / imgRatio_,
+		                 labelNum,
+		                 *maxClassConf,
+		                 cameraId,
+		                 isInBasket
+		);
+		ball.width = boxData[2] / imgRatio_;
+		ball.height = boxData[3] / imgRatio_;
+		ball.x = ball.centerX_ - ball.width / 2;
+		ball.y = ball.centerY_ - ball.height / 2;
+		detectedBalls_.push_back(ball);
+
 		ptr++;
 	}
-//	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 
-	//NMS 防止出现大框套小框
-	for (; detectedBallCount_ < detectedBalls.size(); ++detectedBallCount_)
+	//NMS
+	int pickedBallStart = pickedBalls.size();
+	sort(detectedBalls_.begin(), detectedBalls_.end(), [](Ball &ball1, Ball &ball2) -> bool {
+		return ball1.confidence_ > ball2.confidence_;
+	});
+	for (Ball &newBall: detectedBalls_)
 	{
 		bool pick = true;
-		for (int index: pickedBallsIndex)
+		for (int index = pickedBallStart; index < pickedBalls.size(); ++index)
 		{
-			if (Functions::calcIou(detectedBalls.at(detectedBallCount_), detectedBalls.at(index)) > maxIou_)//两框重叠程度太高就抛弃一个
+			if (Functions::calcIou(pickedBalls.at(index), newBall) > maxIou_)
 			{
 				pick = false;
+				break;
 			}
 		}
 		if (pick)
 		{
-			pickedBallsIndex.push_back(detectedBallCount_);
+			pickedBalls.push_back(newBall);
 		}
 	}
-//	std::cout << "[Info] Picked " << pickedBallsIndex_.size() << " objects" << std::endl;
+	//	std::cout << "[Info] Picked " << pickedBalls_.size() << " objects" << std::endl;
 }
 
-void OvEngineLoader::detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
+void OvEngineLoader::detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId)
 {
 	imgProcess(inputImg);
 	infer();
-	detectDataProcess(detectedBalls, pickedBallsIndex, cameraId);
+	detectDataProcess(pickedBalls, cameraId);
 }
 
 #endif
