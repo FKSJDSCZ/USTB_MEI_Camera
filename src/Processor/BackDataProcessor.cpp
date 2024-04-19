@@ -38,12 +38,13 @@ void BackDataProcessor::backDataProcess(RsCameraLoader *rsCameraArray)
 	if (!pickedBallsIndex_.empty())
 	{
 		Point3f firstBallPosition = detectedBalls_.at(pickedBallsIndex_.front()).cameraPosition_;
-		float leftLimit = std::min(-ROBOT_WIDTH_LIMIT, firstBallPosition.x);
-		float rightLimit = std::max(ROBOT_WIDTH_LIMIT, firstBallPosition.x);
+		float leftLimit = std::min(-ROBOT_WIDTH_LIMIT, firstBallPosition.x) - 2 * RADIUS;
+		float rightLimit = std::max(ROBOT_WIDTH_LIMIT, firstBallPosition.x) + 2 * RADIUS;
+		float frontLimit = firstBallPosition.z - RADIUS;
 		for (int index: pickedBallsIndex_)
 		{
 			Point3f &cameraPosition = detectedBalls_.at(index).cameraPosition_;
-			if (cameraPosition.x > leftLimit && cameraPosition.x < rightLimit && cameraPosition.z < firstBallPosition.z)
+			if (cameraPosition.x > leftLimit && cameraPosition.x < rightLimit && cameraPosition.z < frontLimit)
 			{
 				haveBallInFront_ = true;
 				break;

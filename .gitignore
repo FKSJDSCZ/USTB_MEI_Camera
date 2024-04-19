@@ -1,7 +1,2 @@
 .idea/
 cmake-build-debug/
-detect_deprecated.cpp
-deviceQuery.cpp
-deviceQuery2.cpp
-deviceQuery3.cpp
-rename.cpp
