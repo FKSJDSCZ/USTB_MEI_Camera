@@ -9,11 +9,11 @@ class Ball :
 {
 public:
 	float centerX_, centerY_, confidence_, distance_;
-	int labelNum_, cameraId_;
+	int id_, labelNum_, cameraId_;
 	bool isInBasket_;
 	Point3f cameraPosition_;
 
-	Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId, bool isInBasket);
+	Ball(int id, float centerX, float centerY, int labelNum, float confidence, int cameraId, bool isInBasket);
 
 	void toMillimeter();
 

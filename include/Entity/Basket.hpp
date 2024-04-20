@@ -6,7 +6,7 @@ class Basket :
 		public Ball
 {
 public:
-	std::vector<int> containedBalls_;
+	std::vector<Ball> containedBalls_;
 
-	explicit Basket(Ball ball);
+	explicit Basket(Ball &ball);
 };
