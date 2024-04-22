@@ -1,0 +1,42 @@
+#include "Util/Logger.hpp"
+
+Logger::Logger()
+{
+	outStream_.open("log.txt");
+	if (!outStream_.is_open())
+	{
+		std::cerr << "[Error] Open log file failed" << std::endl;
+	}
+}
+
+Logger &Logger::getInstance()
+{
+	static Logger instance;
+	return instance;
+}
+
+void Logger::writeMsg(int infoType, const std::string &message)
+{
+	if (outStream_.is_open())
+	{
+		time_t t = time(nullptr);
+		tm *tm_ = localtime(&t);
+		outStream_ << std::format("[{}-{}-{} {}:{}:{}]{} {}\n",
+		                          tm_->tm_year + 1900,
+		                          tm_->tm_mon + 1,
+		                          tm_->tm_mday,
+		                          tm_->tm_hour,
+		                          tm_->tm_min,
+		                          tm_->tm_sec,
+		                          infoTypeName_[infoType],
+		                          message);
+	}
+}
+
+Logger::~Logger()
+{
+	if (outStream_.is_open())
+	{
+		outStream_.close();
+	}
+}

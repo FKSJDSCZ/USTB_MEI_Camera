@@ -2,17 +2,21 @@
 
 #include "opencv2/opencv.hpp"
 #include "Entity/Ball.hpp"
+#include "Util/Functions.hpp"
+#include "Constants.hpp"
+#include "Util/Logger.hpp"
 
 class IEngineLoader
 {
-public:
+protected:
 	virtual void imgProcess(Mat inputImg) = 0;
 
 	virtual void infer() = 0;
 
-	virtual void detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) = 0;
+	virtual void detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId) = 0;
 
-	virtual void detect(Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId) = 0;
+public:
+	virtual void detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId) = 0;
 
 	virtual ~IEngineLoader() = default;
 };

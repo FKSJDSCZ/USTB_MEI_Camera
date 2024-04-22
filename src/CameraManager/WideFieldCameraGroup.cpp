@@ -34,11 +34,12 @@ void WideFieldCameraGroup::detectWideFieldCamera()
 
 	if (info.empty())
 	{
-		throw std::runtime_error("[Error] No wide field camera detected");
+		throw std::runtime_error("No wide field camera detected");
 	}
 	else
 	{
 		std::cout << "[Info] Wide field camera " << info << " connected" << std::endl;
+		Logger::getInstance().writeMsg(Logger::INFO, std::format("Camera {} connected", info));
 	}
 }
 
@@ -48,26 +49,29 @@ void WideFieldCameraGroup::groupInit()
 	wideFieldCamera_.init(devIndex_);
 }
 
-void WideFieldCameraGroup::groupDetect(IEngineLoader &engineLoader, FrontDataProcessor &frontDataProcessor)
+void WideFieldCameraGroup::groupDetect(IEngineLoader &engineLoader)
 {
-	wideFieldCamera_.getImg();
-	engineLoader.detect(wideFieldCamera_.colorImg_, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
-
-	frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
-//	if (!frontDataProcessor.baskets_.empty())
-//	{
-//		frontDataProcessor.detectedBalls_.clear();
-//		frontDataProcessor.pickedBallsIndex_.clear();
-//		frontDataProcessor.baskets_.clear();
-//
-//		Mat roi = wideFieldCamera_.colorImg_(frontDataProcessor.basketRoi_);
-//		engineLoader.detect(roi, frontDataProcessor.detectedBalls_, frontDataProcessor.pickedBallsIndex_, 0);
-//		frontDataProcessor.frontDataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows, false);
-//	}
+	wideFieldCamera_.getImage();
+	if (wideFieldCamera_.colorImg_.empty())
+	{
+		Logger::getInstance().writeMsg(Logger::WARNING, "Ignored empty image from wide field camera");
+		return;
+	}
+	engineLoader.detect(wideFieldCamera_.colorImg_, frontDataProcessor_.pickedBalls_, 0);
+	frontDataProcessor_.dataProcess(wideFieldCamera_.colorImg_.cols, wideFieldCamera_.colorImg_.rows);
 }
 
-void WideFieldCameraGroup::groupDrawBoxes(FrontDataProcessor &frontDataProcessor)
+void WideFieldCameraGroup::groupDrawBoxes()
 {
-	frontDataProcessor.drawBoxes(wideFieldCamera_);
+	frontDataProcessor_.drawBoxes(wideFieldCamera_);
+}
+
+void WideFieldCameraGroup::groupShowImages() const
+{
 	imshow("Wide field camera 0", wideFieldCamera_.colorImg_);
+}
+
+void WideFieldCameraGroup::groupSaveVideos()
+{
+	wideFieldCamera_.saveImage();
 }

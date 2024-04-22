@@ -14,8 +14,9 @@ void DataSender::portInit(int devIndex)
 	do
 	{
 		err = UART0_Init(fd_, 115200, 0, 8, 1, 'N');
-		std::cout << "[Info] Set port exactly" << std::endl;
 	} while (FALSE == err || FALSE == fd_);
+
+	Logger::getInstance().writeMsg(Logger::INFO, "Init serial successfully");
 }
 
 void DataSender::writeToBuffer(int startIndex, int dataNum, const int *inputData)
@@ -41,7 +42,7 @@ void DataSender::sendData()
 	int len = UART0_Send(fd_, data, dataNum_ * 2 + 2);
 	if (len > 0)
 	{
-		std::cout << "[Info] data:\t\t\t";
+		std::cout << "[Info] data:\t\t";
 		for (int i = 0; i < dataNum_; ++i)
 		{
 			std::cout << dataBuffer_[i] << " ";

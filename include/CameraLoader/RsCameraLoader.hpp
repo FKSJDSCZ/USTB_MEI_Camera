@@ -47,6 +47,7 @@ private:
 	rs2::align alignToColor_ = rs2::align(RS2_STREAM_COLOR);
 	rs2::pipeline pipe_;
 	rs2::frameset frameSet_;
+	VideoWriter videoWriter_;
 
 public:
 	Mat colorImg_;
@@ -56,14 +57,13 @@ public:
 
 	RsCameraLoader(int imgWidth, int imgHeight, int framerate, float pitchAngleDegree, float yawAngleDegree, Parameters parameters);
 
-	~RsCameraLoader();
-
-	//相机初始化
 	void init(std::string &serialNumber);
 
-	//获取彩色图
-	void getImg();
+	void getImage();
 
-	//获取相机坐标系坐标
 	void getCameraPosition(float centerX, float centerY, Point3f &cameraPosition);
+
+	void saveImage();
+
+	~RsCameraLoader();
 };

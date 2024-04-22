@@ -5,7 +5,7 @@ void RsCameraGroup::detectRsCamera()
 	deviceList_ = context_.query_devices();
 	if (!deviceList_.size())
 	{
-		throw std::runtime_error("[Error] No Realsense camera detected");
+		throw std::runtime_error("No Realsense camera detected");
 	}
 	else if (deviceList_.size() == 1)
 	{
@@ -37,34 +37,52 @@ void RsCameraGroup::groupInit()
 //		colorSensor.set_option(RS2_OPTION_HUE, 10);
 
 		std::cout << "[Info] Realsense camera " << cameraId << " connected. Serial number: " << serialNumber << std::endl;
+		Logger::getInstance().writeMsg(Logger::INFO, std::format("Realsense camera {}({}) connected", cameraId, serialNumber));
 	}
 }
 
-void RsCameraGroup::groupDetect(IEngineLoader &engineLoader, BackDataProcessor &backDataProcessor)
+void RsCameraGroup::groupDetect(IEngineLoader &engineLoader)
 {
 	for (int i = 0; i < 2; ++i)
 	{
 		if (enabled_[i])
 		{
-			rsCamerasArray_[i].getImg();
-			engineLoader.detect(rsCamerasArray_[i].colorImg_, backDataProcessor.detectedBalls_, backDataProcessor.pickedBallsIndex_, i);
+			rsCamerasArray_[i].getImage();
+			if (rsCamerasArray_[i].colorImg_.empty())
+			{
+				Logger::getInstance().writeMsg(Logger::WARNING, std::format("Ignored empty image from Realsense camera {}", i));
+				return;
+			}
+			engineLoader.detect(rsCamerasArray_[i].colorImg_, backDataProcessor_.pickedBalls_, i);
 		}
 	}
+	backDataProcessor_.dataProcess(rsCamerasArray_);
 }
 
-void RsCameraGroup::groupDataProcess(BackDataProcessor &backDataProcessor)
+void RsCameraGroup::groupDrawBoxes()
 {
-	backDataProcessor.backDataProcess(rsCamerasArray_);
+	backDataProcessor_.drawBoxes(rsCamerasArray_);
+
 }
 
-void RsCameraGroup::groupDrawBoxes(BackDataProcessor &backDataProcessor)
+void RsCameraGroup::groupShowImages()
 {
-	backDataProcessor.drawBoxes(rsCamerasArray_);
 	for (int i = 0; i < 2; ++i)
 	{
 		if (enabled_[i])
 		{
 			imshow("Realsense " + std::to_string(i), rsCamerasArray_[i].colorImg_);
+		}
+	}
+}
+
+void RsCameraGroup::groupSaveVideos()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (enabled_[i])
+		{
+			rsCamerasArray_[i].saveImage();
 		}
 	}
 }

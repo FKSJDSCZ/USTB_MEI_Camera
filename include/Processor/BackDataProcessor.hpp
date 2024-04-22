@@ -28,10 +28,9 @@ private:
 	int newLabelNum_[4] = {NEW_RED_BALL, NEW_BLUE_BALL, NEW_PURPLE_BALL, NEW_BASKET};
 
 public:
-	std::vector<Ball> detectedBalls_;
-	std::vector<int> pickedBallsIndex_;
+	std::vector<Ball> pickedBalls_;
 
-	void backDataProcess(RsCameraLoader *rsCameraArray);
+	void dataProcess(RsCameraLoader *rsCameraArray);
 
 	//数据输出
 	void outputPosition(DataSender &dataSender);

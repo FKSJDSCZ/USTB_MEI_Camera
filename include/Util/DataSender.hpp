@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "serial.hpp"
+#include "Util/Logger.hpp"
 
 class DataSender
 {

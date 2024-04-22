@@ -8,6 +8,10 @@ class WideFieldCameraLoader
 {
 private:
 	VideoCapture cap_;
+	VideoWriter videoWriter_;
+	int framerate_ = 30;
+	int imgWidth_ = 640;
+	int imgHeight_ = 30;
 
 public:
 	Mat colorImg_;
@@ -16,5 +20,9 @@ public:
 
 	void init(int devIndex);
 
-	void getImg();
+	void getImage();
+
+	void saveImage();
+
+	~WideFieldCameraLoader();
 };

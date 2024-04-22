@@ -7,15 +7,6 @@ RsCameraLoader::RsCameraLoader(int imgWidth, int imgHeight, int framerate, float
 		parameters_(parameters)
 {}
 
-RsCameraLoader::~RsCameraLoader()
-{
-	if (pipeStarted_)
-	{
-		pipe_.stop();
-	}
-}
-
-//相机初始化
 void RsCameraLoader::init(std::string &serialNumber)
 {
 	config_.enable_device(serialNumber);
@@ -24,15 +15,19 @@ void RsCameraLoader::init(std::string &serialNumber)
 	pipe_.start(config_);
 	pipeStarted_ = true;
 
-	pitchRotateMatrix_ =
-			(Mat_<float>(3, 3) << 1, 0, 0, 0, std::cos(pitchAngleDegree_ * CV_PI / 180), -std::sin(pitchAngleDegree_ * CV_PI / 180), 0, std::sin(
-					pitchAngleDegree_ * CV_PI / 180), std::cos(pitchAngleDegree_ * CV_PI / 180));
-	yawRotateMatrix_ = (Mat_<float>(3, 3) << std::cos(yawAngleDegree_ * CV_PI / 180), 0, std::sin(yawAngleDegree_ * CV_PI / 180), 0, 1, 0, -std::sin(
-			yawAngleDegree_ * CV_PI / 180), 0, std::cos(yawAngleDegree_ * CV_PI / 180));
+	pitchRotateMatrix_ = (Mat_<float>(3, 3) <<
+	                                        1, 0, 0,
+			0, std::cos(pitchAngleDegree_ * CV_PI / 180), -std::sin(pitchAngleDegree_ * CV_PI / 180),
+			0, std::sin(pitchAngleDegree_ * CV_PI / 180), std::cos(pitchAngleDegree_ * CV_PI / 180));
+	yawRotateMatrix_ = (Mat_<float>(3, 3) <<
+	                                      std::cos(yawAngleDegree_ * CV_PI / 180), 0, std::sin(yawAngleDegree_ * CV_PI / 180),
+			0, 1, 0,
+			-std::sin(yawAngleDegree_ * CV_PI / 180), 0, std::cos(yawAngleDegree_ * CV_PI / 180));
+
+	videoWriter_.open("../videos/RS" + serialNumber + ".mp4", VideoWriter::fourcc('m', 'p', '4', 'v'), framerate_, Size(imgWidth_, imgHeight_));
 }
 
-//获取彩色图
-void RsCameraLoader::getImg()
+void RsCameraLoader::getImage()
 {
 	frameSet_ = pipe_.wait_for_frames();
 	frameSet_ = alignToColor_.process(frameSet_);
@@ -40,11 +35,10 @@ void RsCameraLoader::getImg()
 	colorImg_ = Mat(Size(imgWidth_, imgHeight_), CV_8UC3, (void *) colorFrame.get_data(), Mat::AUTO_STEP);
 }
 
-//获取相机坐标系坐标
 void RsCameraLoader::getCameraPosition(float centerX, float centerY, Point3f &cameraPosition)
 {
 	rs2::depth_frame depthFrame = frameSet_.get_depth_frame();
-	rs2::video_stream_profile depthProfile = depthFrame.get_profile().as<rs2::video_stream_profile>();
+	auto depthProfile = depthFrame.get_profile().as<rs2::video_stream_profile>();
 	rs2_intrinsics internReference_ = depthProfile.get_intrinsics();
 
 	//邻近采样防止深度黑洞
@@ -66,4 +60,18 @@ void RsCameraLoader::getCameraPosition(float centerX, float centerY, Point3f &ca
 	Mat positionMatrix = (Mat_<float>(3, 1) << position[0], position[1], position[2]);
 	positionMatrix = yawRotateMatrix_ * pitchRotateMatrix_ * positionMatrix;
 	cameraPosition = {positionMatrix.at<float>(0), positionMatrix.at<float>(1), positionMatrix.at<float>(2)};
+}
+
+void RsCameraLoader::saveImage()
+{
+	videoWriter_.write(colorImg_);
+}
+
+RsCameraLoader::~RsCameraLoader()
+{
+	videoWriter_.release();
+	if (pipeStarted_)
+	{
+		pipe_.stop();
+	}
 }

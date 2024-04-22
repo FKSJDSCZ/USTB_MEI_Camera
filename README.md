@@ -57,6 +57,11 @@
 * **2024/4/1**
   * TrtEngineLoader与OvEngineLoader修改为适配YOLOv8模型
   * WideFieldCameraGroup取消了二次识别逻辑
+* **2024/4/19**
+  * EngineLoader修改推理逻辑错误
+  * 整体代码优化
+* **2024/4/20**
+  * 代码合并到r2-gen2分支，该分支停止维护
 
 #### R2-GEN2
 
@@ -68,6 +73,14 @@
   * 项目整体结构重构与优化，与r2-gen1同步
 * **2024/4/17**
   * BackDataProcessor添加逻辑：判断前进路线上是否有球
+* **2024/4/20**
+  * 接受来自r2-gen1的合并
+* **2024/4/22**
+  * CameraLoader添加逻辑，将推理后的图片作为视频流保存到本地
+  * CameraManager优化，分离画图、显示和保存逻辑
+  * TrtEngineLoader改用智能指针和新的TensorRT API，修改后处理逻辑错误
+  * 添加Logger单例类，用于记录报错信息
+  * 使用C++20标准
 
 ## 使用说明
 

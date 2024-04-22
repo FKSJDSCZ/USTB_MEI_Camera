@@ -2,75 +2,77 @@
 
 #include "EngineLoader/TrtEngineLoader.hpp"
 
-TrtEngineLoader::TrtEngineLoader(std::string enginePath, float minObjectness = 0.4, float minConfidence = 0.5, float maxIou = 0.4) :
-		minObjectness_(minObjectness), minConfidence_(minConfidence), maxIou_(maxIou)
+TrtEngineLoader::TrtEngineLoader(std::string enginePath, float minConfidence = 0.5, float maxIou = 0.4) :
+		minConfidence_(minConfidence), maxIou_(maxIou)
 {
-	inputWidth_ = 640;
-	inputHeight_ = 640;
+	inputSize_ = 1;
 	outputSize_ = 1;
 
 	loadEngine(enginePath);
 	initBuffers();
 }
 
-// 读取模型，反序列化成engine
-void TrtEngineLoader::loadEngine(std::string &enginePath_)
+void TrtEngineLoader::loadEngine(std::string &enginePath)
 {
-	char *modelStream{nullptr};
+	std::vector<unsigned char> modelData;
 
-	std::ifstream inputFileStream(enginePath_.c_str(), std::ios::binary);
-	size_t engineSize{0};
+	std::ifstream inputFileStream(enginePath.c_str(), std::ios::binary);
+	std::streamsize engineSize;
 	if (inputFileStream.good())
 	{
 		inputFileStream.seekg(0, std::ifstream::end);
 		engineSize = inputFileStream.tellg();
+		modelData.resize(engineSize);
 		inputFileStream.seekg(0, std::ifstream::beg);
-		modelStream = new char[engineSize];
-		assert(modelStream);
-		inputFileStream.read(modelStream, engineSize);
+		inputFileStream.read(reinterpret_cast<char *>(modelData.data()), engineSize);
 		inputFileStream.close();
 	}
-	meiRuntime_ = nvinfer1::createInferRuntime(meiLogger);
-	meiCudaEngine_ = meiRuntime_->deserializeCudaEngine(modelStream, engineSize);//反序列化
-	meiExecutionContext_ = meiCudaEngine_->createExecutionContext();
+	runtime_ = std::unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(trtLogger));
+	cudaEngine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(modelData.data(), engineSize));
+	executionContext_ = std::unique_ptr<nvinfer1::IExecutionContext>(cudaEngine_->createExecutionContext());
 
-	delete[] modelStream;
+	Logger::getInstance().writeMsg(Logger::INFO, std::format("Load engine {} successfully", enginePath));
 }
 
-//获取网络输出层结构
-void TrtEngineLoader::setOutputSize()
+void TrtEngineLoader::setInOutputSize()
 {
-	auto out_dims = meiCudaEngine_->getBindingDimensions(1);
-	for (int j = 0; j < out_dims.nbDims; j++)
+	auto inputDims = cudaEngine_->getTensorShape("images");
+	for (int i = 0; i < inputDims.nbDims; ++i)
 	{
-		//以YOLOv5为例，输出1*25200*85
-		//其中1为batch_size，25200为先验框数量，85为：4（先验框参数，即centerX,centerY,width,height）+1（objectness，即boxConf）+80（classNum，即clsConf）
-		std::cout << "[Info] Output dim" << j << ": size = " << out_dims.d[j] << std::endl;
-		outputSize_ *= out_dims.d[j];
+		inputSize_ *= inputDims.d[i];
 	}
-	batchSize_ = out_dims.d[0];
-	classNum_ = out_dims.d[1] - 4;
-	outputMaxNum_ = out_dims.d[2];
+	batchSize_ = inputDims.d[0];
+	inputWidth_ = inputDims.d[2];
+	inputHeight_ = inputDims.d[3];
+
+	auto outputDims = cudaEngine_->getTensorShape("output0");
+	for (int i = 0; i < outputDims.nbDims; i++)
+	{
+		//以本项目所用模型为例，输出1*11*34000
+		//其中1为batch_size，11为：centerX, centerY, width, height, clsConf0, clsConf1, ...，25200为先验框数量
+		std::cout << "[Info] Output dim" << i << ": size = " << outputDims.d[i] << std::endl;
+		outputSize_ *= outputDims.d[i];
+	}
+	classNum_ = outputDims.d[1] - 4;
+	outputMaxNum_ = outputDims.d[2];
 }
 
-//分配相关内存
 void TrtEngineLoader::initBuffers()
 {
-	setOutputSize();
-	inputSize_ = batchSize_ * inputHeight_ * inputWidth_ * 3;
-	inputBlob_ = new float[inputSize_];
-	//输入输出层的名字根据网络结构确定
-	const int inputIndex = meiCudaEngine_->getBindingIndex("images");
-	const int outputIndex = meiCudaEngine_->getBindingIndex("output0");
-	assert(inputIndex == 0);
-	assert(outputIndex == 1);
-	cudaMalloc((void **) &gpuBuffers_[inputIndex], inputSize_ * sizeof(float));//分配显存（接收主机内存输入）
-	cudaMalloc((void **) &gpuBuffers_[outputIndex], outputSize_ * sizeof(float));//分配显存（向主机内存输出）
+	setInOutputSize();
+
+	cudaMalloc(&gpuBuffers_[0], inputSize_ * sizeof(float));//分配显存（接收主机内存输入）
+	cudaMalloc(&gpuBuffers_[1], outputSize_ * sizeof(float));//分配显存（向主机内存输出）
+
+	executionContext_->setInputShape("images", nvinfer1::Dims4{batchSize_, 3, inputWidth_, inputHeight_});
+	executionContext_->setTensorAddress("images", gpuBuffers_[0]);
+	executionContext_->setTensorAddress("output0", gpuBuffers_[1]);
+
 	cudaStreamCreate(&meiCudaStream_);
-	cpuOutputBuffer_ = new float[outputSize_]();//主机内存接收来自GPU的推理结果
+	inputBlob_ = new float[inputSize_];
+	cpuOutputBuffer_ = new float[outputSize_];//主机内存接收来自GPU的推理结果
 }
 
-//图像预处理
 void TrtEngineLoader::imgProcess(Mat inputImg)
 {
 	//缩放与填充
@@ -100,79 +102,88 @@ void TrtEngineLoader::imgProcess(Mat inputImg)
 	}
 }
 
-// 推理
 void TrtEngineLoader::infer()
 {
 	cudaMemcpyAsync(gpuBuffers_[0], inputBlob_, inputSize_ * sizeof(float), cudaMemcpyHostToDevice, meiCudaStream_);//输入数据传入显存
-	auto start = std::chrono::system_clock::now();//计时器
-	meiExecutionContext_->enqueueV2((void **) gpuBuffers_, meiCudaStream_, nullptr);//异步推理
-	cudaMemcpyAsync((void *) cpuOutputBuffer_, gpuBuffers_[1], outputSize_ * sizeof(float), cudaMemcpyDeviceToHost, meiCudaStream_);//推理数据传出显存
-	cudaStreamSynchronize(meiCudaStream_);//流同步
+	auto start = std::chrono::system_clock::now();
+	executionContext_->enqueueV3(meiCudaStream_);//异步推理
+	cudaStreamSynchronize(meiCudaStream_);
 	auto end = std::chrono::system_clock::now();
+	cudaMemcpyAsync(cpuOutputBuffer_, gpuBuffers_[1], outputSize_ * sizeof(float), cudaMemcpyDeviceToHost, meiCudaStream_);//推理数据传出显存
 
-	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
-//后处理推理数据
-void TrtEngineLoader::detectDataProcess(std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
+void TrtEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId)
 {
-	int detectedBallCount_ = detectedBalls.size();
-	float *ptr = cpuOutputBuffer_;
-	for (int i = 0; i < outputMaxNum_; ++i)
+	detectedBalls_.clear();
+
+	for (int anchor = 0; anchor < outputMaxNum_; ++anchor)
 	{
+		// boxData = [centerX, centerY, width, height, clsConf0, clsConf1, ...]
 		float boxData[classNum_ + 4];
 		for (int j = 0; j < classNum_ + 4; ++j)
 		{
-			boxData[j] = ptr[j * outputMaxNum_];
+			boxData[j] = cpuOutputBuffer_[anchor + j * outputMaxNum_];
 		}
-		float *objectness = std::max_element(boxData + 4, boxData + classNum_ + 4);
-		if (*objectness >= minObjectness_)
+
+		float *maxClassConf = std::max_element(boxData + 4, boxData + classNum_ + 4);
+		if (*maxClassConf < minConfidence_)
 		{
-			int label = objectness - (boxData + 4);
-			bool isInBasket = false;
-			float centerX = (boxData[0] - offsetX_) / imgRatio_;//减去填充像素
-			float centerY = (boxData[1] - offsetY_) / imgRatio_;
-			float confidence = boxData[label + 4] * *objectness;//该物体属于某个标签类别的概率（置信度）
-
-			//判断是否在球框内（7cls）
-			if (label % 2)
-			{
-				label--;
-				isInBasket = true;
-			}
-			label /= 2;
-
-			if (confidence >= minConfidence_)
-			{
-				Ball ball = Ball(centerX, centerY, label, confidence, cameraId, isInBasket);
-				ball.width = boxData[2] / imgRatio_;
-				ball.height = boxData[3] / imgRatio_;
-				ball.x = ball.centerX_ - ball.width * 0.5;
-				ball.y = ball.centerY_ - ball.height * 0.5;
-				detectedBalls.push_back(ball);
-			}
+			continue;
 		}
-		ptr++;
-	}
-//	std::cout << "[Info] Found " << detectedBalls_.size() << " objects" << std::endl;
 
-	//NMS 防止出现大框套小框
-	for (; detectedBallCount_ < detectedBalls.size(); ++detectedBallCount_)
+		int labelNum = maxClassConf - (boxData + 4);
+		bool isInBasket = false;
+		if (labelNum % 2)
+		{
+			labelNum--;
+			isInBasket = true;
+		}
+		labelNum /= 2;
+
+		Ball ball = Ball((boxData[0] - offsetX_) / imgRatio_,
+		                 (boxData[1] - offsetY_) / imgRatio_,
+		                 labelNum,
+		                 *maxClassConf,
+		                 cameraId,
+		                 isInBasket);
+		ball.width = boxData[2] / imgRatio_;
+		ball.height = boxData[3] / imgRatio_;
+		ball.x = ball.centerX_ - ball.width / 2;
+		ball.y = ball.centerY_ - ball.height / 2;
+		detectedBalls_.push_back(ball);
+	}
+
+	//NMS
+	int pickedBallStart = pickedBalls.size();
+	sort(detectedBalls_.begin(), detectedBalls_.end(), [](Ball &ball1, Ball &ball2) -> bool {
+		return ball1.confidence_ > ball2.confidence_;
+	});
+	for (Ball &newBall: detectedBalls_)
 	{
 		bool pick = true;
-		for (int index: pickedBallsIndex)
+		for (int index = pickedBallStart; index < pickedBalls.size(); ++index)
 		{
-			if (Functions::calcIou(detectedBalls.at(detectedBallCount_), detectedBalls.at(index)) > maxIou_)//两框重叠程度太高就抛弃一个
+			if (Functions::calcIou(pickedBalls.at(index), newBall) > maxIou_)
 			{
 				pick = false;
+				break;
 			}
 		}
 		if (pick)
 		{
-			pickedBallsIndex.push_back(detectedBallCount_);
+			pickedBalls.push_back(newBall);
 		}
 	}
-	std::cout << "[Info] Picked " << pickedBallsIndex.size() << " objects" << std::endl;
+	std::cout << "[Info] Picked " << pickedBalls.size() << " objects" << std::endl;
+}
+
+void TrtEngineLoader::detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId)
+{
+	imgProcess(inputImg);
+	infer();
+	detectDataProcess(pickedBalls, cameraId);
 }
 
 TrtEngineLoader::~TrtEngineLoader()
@@ -182,16 +193,6 @@ TrtEngineLoader::~TrtEngineLoader()
 	delete[] cpuOutputBuffer_;
 	cudaFree(gpuBuffers_[0]);
 	cudaFree(gpuBuffers_[1]);
-	delete meiExecutionContext_;
-	delete meiCudaEngine_;
-	delete meiRuntime_;
-}
-
-void TrtEngineLoader::detect(cv::Mat inputImg, std::vector<Ball> &detectedBalls, std::vector<int> &pickedBallsIndex, int cameraId)
-{
-	imgProcess(inputImg);
-	infer();
-	detectDataProcess(detectedBalls, pickedBallsIndex, cameraId);
 }
 
 #endif

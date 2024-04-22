@@ -3,6 +3,7 @@
 #include "CameraLoader/RsCameraLoader.hpp"
 #include "EngineLoader/IEngineLoader.hpp"
 #include "Processor/BackDataProcessor.hpp"
+#include "Util/Logger.hpp"
 
 class RsCameraGroup
 {
@@ -17,14 +18,17 @@ private:
 
 public:
 	RsCameraLoader rsCamerasArray_[2];
+	BackDataProcessor backDataProcessor_;
 
 	void detectRsCamera();
 
 	void groupInit();
 
-	void groupDetect(IEngineLoader &engineLoader, BackDataProcessor &backDataProcessor);
+	void groupDetect(IEngineLoader &engineLoader);
 
-	void groupDataProcess(BackDataProcessor &backDataProcessor);
+	void groupDrawBoxes();
 
-	void groupDrawBoxes(BackDataProcessor &backDataProcessor);
+	void groupShowImages();
+
+	void groupSaveVideos();
 };

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(MEI)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
-set(WITH_CUDA OFF)
-set(WITH_OPENVINO ON)
+set(WITH_CUDA ON)
+set(WITH_OPENVINO OFF)
 set(GRAPHIC_DEBUG ON)
 set(WITH_SERIAL OFF)
 
@@ -59,7 +59,8 @@ target_link_libraries(${PROJECT_NAME}
 if (WITH_CUDA)
     target_link_libraries(${PROJECT_NAME}
             cudart
-            nvinfer
+            #            nvinfer
+            /home/ywh/TensorRT-8.6.1.6/lib/libnvinfer.so
     )
 elseif (WITH_OPENVINO)
     target_link_libraries(${PROJECT_NAME}

@@ -6,20 +6,26 @@
 #include "CameraLoader/WideFieldCameraLoader.hpp"
 #include "EngineLoader/IEngineLoader.hpp"
 #include "Processor/FrontDataProcessor.hpp"
+#include "Util/Logger.hpp"
 
 class WideFieldCameraGroup
 {
 private:
-	int devIndex_;
+	int devIndex_ = 0;
 
 public:
 	WideFieldCameraLoader wideFieldCamera_;
+	FrontDataProcessor frontDataProcessor_;
 
 	void detectWideFieldCamera();
 
 	void groupInit();
 
-	void groupDetect(IEngineLoader &engineLoader, FrontDataProcessor &frontDataProcessor);
+	void groupDetect(IEngineLoader &engineLoader);
 
-	void groupDrawBoxes(FrontDataProcessor &frontDataProcessor);
+	void groupDrawBoxes();
+
+	void groupShowImages() const;
+
+	void groupSaveVideos();
 };
