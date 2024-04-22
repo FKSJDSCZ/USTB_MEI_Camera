@@ -81,6 +81,9 @@
   * TrtEngineLoader改用智能指针和新的TensorRT API，修改后处理逻辑错误
   * 添加Logger单例类，用于记录报错信息
   * 使用C++20标准
+* **2024/4/23**
+  * OvEngineLoader修改后处理逻辑错误
+  * main函数捕获所有中断信号和异常，记录并正常退出程序
 
 ## 使用说明
 

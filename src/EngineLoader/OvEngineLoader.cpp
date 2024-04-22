@@ -78,13 +78,13 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int camer
 	detectedBalls_.clear();
 	auto *ptr = inferRequest_.get_output_tensor().data<float>();
 
-	for (int i = 0; i < outputMaxNum_; ++i)
+	for (int anchor = 0; anchor < outputMaxNum_; ++anchor)
 	{
 		// boxData = [centerX, centerY, width, height, clsConf0, clsConf1, ...]
 		float boxData[classNum_ + 4];
 		for (int j = 0; j < classNum_ + 4; ++j)
 		{
-			boxData[j] = ptr[j * outputMaxNum_];
+			boxData[j] = ptr[anchor + j * outputMaxNum_];
 		}
 
 		float *maxClassConf = std::max_element(boxData + 4, boxData + classNum_ + 4);
@@ -113,10 +113,7 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int camer
 		ball.x = ball.centerX_ - ball.width / 2;
 		ball.y = ball.centerY_ - ball.height / 2;
 		detectedBalls_.push_back(ball);
-
-		ptr++;
 	}
-	std::cout << "[Info] Detected " << detectedBalls_.size() << " objects" << std::endl;
 
 	//NMS
 	int pickedBallStart = pickedBalls.size();

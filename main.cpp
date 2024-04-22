@@ -1,3 +1,4 @@
+#include <csignal>
 #include "Util/DataSender.hpp"
 #include "Processor/BackDataProcessor.hpp"
 #include "Processor/FrontDataProcessor.hpp"
@@ -7,10 +8,21 @@
 #include "CameraManager/RsCameraGroup.hpp"
 #include "CameraManager/WideFieldCameraGroup.hpp"
 
+volatile bool interruptFlag = false;
+
+void signalHandler(int signal)
+{
+	interruptFlag = true;
+	std::string warning = std::format("Received signal {}", signal);
+	std::cerr << warning << std::endl;
+	Logger::getInstance().writeMsg(Logger::WARNING, warning);
+}
+
 int mainBody()
 {
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
+	std::cout << getBuildInformation() << std::endl;
 
 	DataSender dataSender = DataSender(0);
 
@@ -27,7 +39,7 @@ int mainBody()
 //	wideFieldCameraGroup.detectWideFieldCamera();
 //	wideFieldCameraGroup.groupInit();
 
-	while (true)
+	while (!interruptFlag)
 	{
 		//back
 		rsCameraGroup.groupDetect(engineLoader);
@@ -66,6 +78,33 @@ int mainBody()
 
 int main()
 {
+	signal(SIGHUP, signalHandler);//1
+	signal(SIGINT, signalHandler);//2
+	signal(SIGQUIT, signalHandler);//3
+	signal(SIGILL, signalHandler);
+	signal(SIGTRAP, signalHandler);
+	signal(SIGABRT, signalHandler);//6
+	signal(SIGFPE, signalHandler);//8
+	signal(SIGKILL, signalHandler);//9
+	signal(SIGBUS, signalHandler);//10
+	signal(SIGSEGV, signalHandler);//11
+	signal(SIGSYS, signalHandler);
+	signal(SIGPIPE, signalHandler);
+	signal(SIGALRM, signalHandler);
+	signal(SIGTERM, signalHandler);//15
+	signal(SIGURG, signalHandler);
+	signal(SIGSTOP, signalHandler);//17
+	signal(SIGTSTP, signalHandler);
+	signal(SIGCONT, signalHandler);
+	signal(SIGCHLD, signalHandler);
+	signal(SIGTTIN, signalHandler);
+	signal(SIGTTOU, signalHandler);
+	signal(SIGPOLL, signalHandler);
+	signal(SIGXCPU, signalHandler);
+	signal(SIGXFSZ, signalHandler);
+	signal(SIGVTALRM, signalHandler);
+	signal(SIGPROF, signalHandler);//27
+
 	int ret;
 	try
 	{
