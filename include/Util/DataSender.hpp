@@ -8,7 +8,7 @@ class DataSender
 {
 private:
 	int fd_;
-	static constexpr int dataNum_ = 20;
+	static constexpr int dataNum_ = 24;
 	int dataBuffer_[dataNum_];
 
 public:

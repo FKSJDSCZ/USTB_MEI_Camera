@@ -70,7 +70,7 @@ void OvEngineLoader::infer()
 	inferRequest_.wait();
 	auto end = std::chrono::system_clock::now();
 
-	//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 }
 
 void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId)
@@ -103,11 +103,11 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int camer
 		labelNum /= 2;
 
 		Ball ball = Ball((boxData[0] - offsetX_) / imgRatio_,
-		                 (boxData[1] - offsetY_) / imgRatio_,
-		                 labelNum,
-		                 *maxClassConf,
-		                 cameraId,
-		                 isInBasket);
+						 (boxData[1] - offsetY_) / imgRatio_,
+						 labelNum,
+						 *maxClassConf,
+						 cameraId,
+						 isInBasket);
 		ball.width = boxData[2] / imgRatio_;
 		ball.height = boxData[3] / imgRatio_;
 		ball.x = ball.centerX_ - ball.width / 2;
@@ -136,7 +136,7 @@ void OvEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int camer
 			pickedBalls.push_back(newBall);
 		}
 	}
-	std::cout << "[Info] Picked " << pickedBalls.size() << " objects" << std::endl;
+//	std::cout << "[Info] Picked " << pickedBalls.size() << " objects" << std::endl;
 }
 
 void OvEngineLoader::detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId)

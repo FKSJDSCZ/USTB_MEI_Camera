@@ -2,8 +2,9 @@
 
 Parameters::Parameters() = default;
 
-Parameters::Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY, float offsetToEncodingDiskZ) :
-		offsetToEncodingDiskX_(offsetToEncodingDiskX), offsetToEncodingDiskY_(offsetToEncodingDiskY), offsetToEncodingDiskZ_(offsetToEncodingDiskZ)
+Parameters::Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY, float offsetToEncodingDiskZ, float changeRate) :
+		offsetToEncodingDiskX_(offsetToEncodingDiskX), offsetToEncodingDiskY_(offsetToEncodingDiskY), offsetToEncodingDiskZ_(offsetToEncodingDiskZ),
+		changeRate_(changeRate)
 {
 	parametersInit();
 }

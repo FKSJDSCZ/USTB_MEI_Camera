@@ -10,11 +10,12 @@ public:
 	float offsetToEncodingDiskX_;
 	float offsetToEncodingDiskY_;
 	float offsetToEncodingDiskZ_;
+	float changeRate_;
 	Point3f offsetPoint;
 
 	Parameters();
 
-	Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY, float offsetToEncodingDiskZ);
+	Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY, float offsetToEncodingDiskZ, float changeRate);
 
 	void parametersInit();
 };

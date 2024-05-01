@@ -11,7 +11,7 @@ void Ball::toMillimeter()
 
 void Ball::offsetToEncodingDisk(Parameters &parameters)
 {
-	cameraPosition_.x += parameters.offsetToEncodingDiskX_;
-	cameraPosition_.y += parameters.offsetToEncodingDiskY_;
-	cameraPosition_.z += parameters.offsetToEncodingDiskZ_;
+	cameraPosition_.x = parameters.changeRate_ * (cameraPosition_.x + parameters.offsetToEncodingDiskX_);
+	cameraPosition_.y = cameraPosition_.y + parameters.offsetToEncodingDiskY_;
+	cameraPosition_.z = cameraPosition_.z + parameters.offsetToEncodingDiskZ_;
 }

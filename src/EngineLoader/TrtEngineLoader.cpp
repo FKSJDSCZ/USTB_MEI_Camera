@@ -176,7 +176,7 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int came
 			pickedBalls.push_back(newBall);
 		}
 	}
-	std::cout << "[Info] Picked " << pickedBalls.size() << " objects" << std::endl;
+//	std::cout << "[Info] Picked " << pickedBalls.size() << " objects" << std::endl;
 }
 
 void TrtEngineLoader::detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId)

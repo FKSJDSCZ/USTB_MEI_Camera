@@ -22,7 +22,6 @@ int mainBody()
 {
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
-	std::cout << getBuildInformation() << std::endl;
 
 	DataSender dataSender = DataSender(0);
 
