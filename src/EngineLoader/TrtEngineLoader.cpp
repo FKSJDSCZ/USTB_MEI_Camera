@@ -142,16 +142,15 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int came
 		}
 		labelNum /= 2;
 
-		Ball ball = Ball((boxData[0] - offsetX_) / imgRatio_,
-		                 (boxData[1] - offsetY_) / imgRatio_,
-		                 labelNum,
-		                 *maxClassConf,
-		                 cameraId,
-		                 isInBasket);
-		ball.width = boxData[2] / imgRatio_;
-		ball.height = boxData[3] / imgRatio_;
-		ball.x = ball.centerX_ - ball.width / 2;
-		ball.y = ball.centerY_ - ball.height / 2;
+		Ball ball;
+		ball.addGraphPosition((boxData[0] - offsetX_) / imgRatio_,
+		                      (boxData[1] - offsetY_) / imgRatio_,
+		                      boxData[2] / imgRatio_,
+		                      boxData[3] / imgRatio_,
+		                      *maxClassConf,
+		                      labelNum,
+		                      cameraId,
+		                      isInBasket);
 		detectedBalls_.push_back(ball);
 	}
 
@@ -165,7 +164,7 @@ void TrtEngineLoader::detectDataProcess(std::vector<Ball> &pickedBalls, int came
 		bool pick = true;
 		for (int index = pickedBallStart; index < pickedBalls.size(); ++index)
 		{
-			if (Functions::calcIou(pickedBalls.at(index), newBall) > maxIou_)
+			if (Functions::calcIou(pickedBalls.at(index).graphRect(), newBall.graphRect()) > maxIou_)
 			{
 				pick = false;
 				break;

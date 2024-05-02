@@ -3,7 +3,6 @@
 #include "librealsense2/rs.hpp"
 #include "Entity/Parameters.hpp"
 
-using namespace cv;
 
 class RsCameraLoader
 {
@@ -61,7 +60,7 @@ public:
 
 	void getImage();
 
-	void getCameraPosition(float centerX, float centerY, Point3f &cameraPosition);
+	Point3f getCameraPosition(const Point2f &graphCenter);
 
 	void saveImage();
 

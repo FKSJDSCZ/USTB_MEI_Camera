@@ -2,12 +2,8 @@
 
 void FrontDataProcessor::dataProcess(int imgWidth, int imgHeight)
 {
-	std::sort(pickedBalls_.begin(), pickedBalls_.end(), [this](Ball &ball1, Ball &ball2) -> bool {
-		if (ball1.cameraId_ == ball2.cameraId_)
-		{
-			return ball1.centerX_ < ball2.centerX_;
-		}
-		return ball1.cameraId_ < ball2.cameraId_;
+	std::sort(pickedBalls_.begin(), pickedBalls_.end(), [](Ball &ball1, Ball &ball2) -> bool {
+		return ball1.graphCenter().x < ball2.graphCenter().x;
 	});
 
 	//选出框 删除非框中球
@@ -40,21 +36,22 @@ void FrontDataProcessor::dataProcess(int imgWidth, int imgHeight)
 	for (Basket &basket: baskets_)
 	{
 		//横向筛选
+		Rect2f filterRect = Rect2f(basket.graphRect().x, basket.graphRect().y - basket.graphRect().height * 0.5f,
+		                           basket.graphRect().width, basket.graphRect().height * 1.5f);
 		for (; ballIt != pickedBalls_.end(); ++ballIt)
 		{
-			if (ballIt->centerX_ > basket.x && ballIt->centerX_ < basket.x + basket.width && ballIt->centerY_ < basket.y + basket.height
-			    && ballIt->centerY_ > basket.y - basket.height * 0.5)
+			if (filterRect.contains(ballIt->graphCenter()))
 			{
 				basket.containedBalls_.push_back(*(ballIt));
 			}
-			else if (ballIt->centerX_ >= basket.x + basket.width)
+			else if (ballIt->graphCenter().x >= filterRect.x + filterRect.width)
 			{
 				break;
 			}
 		}
 		//高度升序（y降序）排序
 		std::sort(basket.containedBalls_.begin(), basket.containedBalls_.end(), [](Ball &ball1, Ball &ball2) -> bool {
-			return ball1.centerY_ > ball2.centerY_;
+			return ball1.graphCenter().y > ball2.graphCenter().y;
 		});
 	}
 }
@@ -103,19 +100,22 @@ void FrontDataProcessor::drawBoxes(WideFieldCameraLoader &wideFieldCamera)
 
 	for (Ball &tempBall: pickedBalls_)
 	{
-		rectangle(img, tempBall, RED, 2);
-		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G")
-				, Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		rectangle(img, tempBall.graphRect(), RED, 2);
+		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G"),
+		        Point(tempBall.graphRect().x, tempBall.graphRect().y),
+		        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 
 	for (Basket &basket: baskets_)
 	{
-		rectangle(img, basket, GREEN, 2);
-		putText(img, std::to_string(basket.labelNum_), Point(basket.x, basket.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		rectangle(img, basket.graphRect(), GREEN, 2);
+		putText(img, std::to_string(basket.labelNum_), Point(basket.graphRect().x, basket.graphRect().y),
+		        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 		for (Ball &tempBall: basket.containedBalls_)
 		{
-			rectangle(img, tempBall, GREEN, 2);
-			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.x, tempBall.y), FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+			rectangle(img, tempBall.graphRect(), GREEN, 2);
+			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.graphRect().x, tempBall.graphRect().y),
+			        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 		}
 	}
 }

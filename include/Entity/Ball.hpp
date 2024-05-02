@@ -1,21 +1,34 @@
 #pragma once
 
-#include "Parameters.hpp"
+#include "CameraLoader/RsCameraLoader.hpp"
+#include "Entity/BallPosition.hpp"
 
-using namespace cv;
 
-class Ball :
-		public Rect_<float>
+class Ball
 {
 public:
-	float centerX_, centerY_, confidence_, distance_;
-	int labelNum_, cameraId_;
+	int labelNum_;
 	bool isInBasket_;
-	Point3f cameraPosition_;
+	bool isValid_;
+	float distance_;
+	float confidence_;
+	std::vector<BallPosition> ballPositions_;
 
-	Ball(float centerX, float centerY, int labelNum, float confidence, int cameraId, bool isInBasket);
+	Point3f cameraPosition();
+
+	Rect2f graphRect();
+
+	Point2f graphCenter();
+
+	void merge(Ball &ball);
+
+	void addGraphPosition(float centerX, float centerY, float width, float height, float confidence, int labelNum, int cameraId, bool isInBasket);
+
+	void setCameraPosition(RsCameraLoader *rsCameraArray);
 
 	void toMillimeter();
 
-	void offsetToEncodingDisk(Parameters &parameters);
+	void offsetToEncodingDisk(RsCameraLoader *rsCameraArray);
+
+	void calcDistance();
 };

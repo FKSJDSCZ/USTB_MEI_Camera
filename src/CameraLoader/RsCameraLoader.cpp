@@ -35,21 +35,22 @@ void RsCameraLoader::getImage()
 	colorImg_ = Mat(Size(imgWidth_, imgHeight_), CV_8UC3, (void *) colorFrame.get_data(), Mat::AUTO_STEP);
 }
 
-void RsCameraLoader::getCameraPosition(float centerX, float centerY, Point3f &cameraPosition)
+Point3f RsCameraLoader::getCameraPosition(const Point2f &graphCenter)
 {
 	rs2::depth_frame depthFrame = frameSet_.get_depth_frame();
 	auto depthProfile = depthFrame.get_profile().as<rs2::video_stream_profile>();
-	rs2_intrinsics internReference_ = depthProfile.get_intrinsics();
+	rs2_intrinsics internReference = depthProfile.get_intrinsics();
 
 	//邻近采样防止深度黑洞
 	float position[3];
+	Rect2i imgRect = Rect2i(0, 0, colorImg_.cols, colorImg_.rows);
 	for (auto &offset: pixelOffset_)
 	{
-		float point[2] = {centerX + offset[0], centerY + offset[1]};
-		if (point[0] >= 0 && point[0] < colorImg_.cols && point[1] >= 0 && point[1] < colorImg_.rows)
+		float point[2] = {graphCenter.x + offset[0], graphCenter.y + offset[1]};
+		if (imgRect.contains(Point2i(point[0], point[1])))
 		{
 			float depthValue = depthFrame.get_distance(point[0], point[1]);
-			rs2_deproject_pixel_to_point(position, &internReference_, point, depthValue);
+			rs2_deproject_pixel_to_point(position, &internReference, point, depthValue);
 			if (position[0] || position[1] || position[2])
 			{
 				break;
@@ -59,7 +60,7 @@ void RsCameraLoader::getCameraPosition(float centerX, float centerY, Point3f &ca
 
 	Mat positionMatrix = (Mat_<float>(3, 1) << position[0], position[1], position[2]);
 	positionMatrix = yawRotateMatrix_ * pitchRotateMatrix_ * positionMatrix;
-	cameraPosition = {positionMatrix.at<float>(0), positionMatrix.at<float>(1), positionMatrix.at<float>(2)};
+	return {positionMatrix.at<float>(0), positionMatrix.at<float>(1), positionMatrix.at<float>(2)};
 }
 
 void RsCameraLoader::saveImage()
