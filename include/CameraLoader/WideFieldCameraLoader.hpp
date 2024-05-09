@@ -11,12 +11,13 @@ private:
 	VideoWriter videoWriter_;
 	int framerate_ = 30;
 	int imgWidth_ = 640;
-	int imgHeight_ = 30;
+	int imgHeight_ = 480;
 
 public:
 	Mat colorImg_;
+	int cameraId_;
 
-	WideFieldCameraLoader();
+	explicit WideFieldCameraLoader(int cameraId);
 
 	void init(int devIndex);
 

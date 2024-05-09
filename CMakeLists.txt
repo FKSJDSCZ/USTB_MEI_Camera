@@ -67,3 +67,8 @@ elseif (WITH_OPENVINO)
             openvino::runtime
     )
 endif ()
+
+# VCS
+if (IS_R2_GEN2_VER1)
+    add_definitions(-DIS_R2_GEN2_VER1)
+endif ()

@@ -7,13 +7,13 @@ int UART0_Open(int fd, const char *port)
 	if (FALSE == fd)
 	{
 		perror("Can't Open Serial Port");
-		return (FALSE);
+		return FALSE;
 	}
 	//恢复串口为阻塞状态
 	if (fcntl(fd, F_SETFL, 0) < 0)
 	{
 		printf("fcntl failed!\n");
-		return (FALSE);
+		return FALSE;
 	}
 	else
 	{
@@ -23,7 +23,7 @@ int UART0_Open(int fd, const char *port)
 	if (0 == isatty(STDIN_FILENO))
 	{
 		printf("standard input is not a terminal device\n");
-		return (FALSE);
+		return FALSE;
 	}
 	else
 	{
@@ -38,7 +38,7 @@ void UART0_Close(int fd)
 	close(fd);
 }
 
-int UART0_Set(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
+int UART0_Init(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
 {
 
 	int i;
@@ -169,20 +169,6 @@ int UART0_Set(int fd, int speed, int flow_ctrl, int databits, int stopbits, int 
 		return (FALSE);
 	}
 	return (TRUE);
-}
-
-int UART0_Init(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
-{
-	int err;
-	//设置串口数据帧格式
-	if (UART0_Set(fd, speed, 0, 8, 1, 'N') == FALSE)
-	{
-		return FALSE;
-	}
-	else
-	{
-		return TRUE;
-	}
 }
 
 int UART0_Recv(int fd, char *rcv_buf, int data_len)

@@ -87,6 +87,15 @@
 * **2024/5/1**
   * Ball优化了参数校准的逻辑
   * BackDataProcessor添加去重逻辑，优化了部分逻辑
+* **2024/5/2**
+  * 添加BallPosition类，用于记录同一个球在多摄像头下的位置
+  * 修改Ball类及其相关类
+* **2024/5/9**
+  * CameraLoader合并为CameraManager，为每个CameraLoader分配连续的cameraId
+  * EngineLoader适配多batch和动态batch模型
+  * 俯仰角和偏航角集成到Parameters，不再作为CameraLoader成员变量
+  * 宏定义优化，区分R2_GEN2_VER1和R2_GEN2_VER2
+  * 其他的相关优化
 
 ## 使用说明
 

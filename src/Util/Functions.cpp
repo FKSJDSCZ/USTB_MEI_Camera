@@ -9,7 +9,8 @@ float Functions::calcIou(Rect2f rect1, Rect2f rect2)
 
 float Functions::calcDistance3f(Point3f cameraPosition1, Point3f cameraPosition2)
 {
-	return std::sqrt(pow(cameraPosition1.x - cameraPosition2.x, 2) + pow(cameraPosition1.y - cameraPosition2.y, 2)
+	return std::sqrt(pow(cameraPosition1.x - cameraPosition2.x, 2)
+	                 + pow(cameraPosition1.y - cameraPosition2.y, 2)
 	                 + pow(cameraPosition1.z - cameraPosition2.z, 2));
 }
 

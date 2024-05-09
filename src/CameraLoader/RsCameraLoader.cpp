@@ -1,10 +1,7 @@
 #include "CameraLoader/RsCameraLoader.hpp"
 
-RsCameraLoader::RsCameraLoader() = default;
-
-RsCameraLoader::RsCameraLoader(int imgWidth, int imgHeight, int framerate, float pitchAngleDegree, float yawAngleDegree, Parameters parameters) :
-		imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), pitchAngleDegree_(pitchAngleDegree), yawAngleDegree_(yawAngleDegree),
-		parameters_(parameters)
+RsCameraLoader::RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters) :
+		cameraId_(cameraId), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters)
 {}
 
 void RsCameraLoader::init(std::string &serialNumber)
@@ -13,16 +10,15 @@ void RsCameraLoader::init(std::string &serialNumber)
 	config_.enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
 	config_.enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
 	pipe_.start(config_);
-	pipeStarted_ = true;
 
 	pitchRotateMatrix_ = (Mat_<float>(3, 3) <<
 	                                        1, 0, 0,
-			0, std::cos(pitchAngleDegree_ * CV_PI / 180), -std::sin(pitchAngleDegree_ * CV_PI / 180),
-			0, std::sin(pitchAngleDegree_ * CV_PI / 180), std::cos(pitchAngleDegree_ * CV_PI / 180));
+			0, std::cos(parameters_.pitchAngle_ * CV_PI / 180), -std::sin(parameters_.pitchAngle_ * CV_PI / 180),
+			0, std::sin(parameters_.pitchAngle_ * CV_PI / 180), std::cos(parameters_.pitchAngle_ * CV_PI / 180));
 	yawRotateMatrix_ = (Mat_<float>(3, 3) <<
-	                                      std::cos(yawAngleDegree_ * CV_PI / 180), 0, std::sin(yawAngleDegree_ * CV_PI / 180),
+	                                      std::cos(parameters_.yawAngle_ * CV_PI / 180), 0, std::sin(parameters_.yawAngle_ * CV_PI / 180),
 			0, 1, 0,
-			-std::sin(yawAngleDegree_ * CV_PI / 180), 0, std::cos(yawAngleDegree_ * CV_PI / 180));
+			-std::sin(parameters_.yawAngle_ * CV_PI / 180), 0, std::cos(parameters_.yawAngle_ * CV_PI / 180));
 
 	videoWriter_.open("../videos/RS" + serialNumber + ".mp4", VideoWriter::fourcc('m', 'p', '4', 'v'), framerate_, Size(imgWidth_, imgHeight_));
 }
@@ -71,8 +67,4 @@ void RsCameraLoader::saveImage()
 RsCameraLoader::~RsCameraLoader()
 {
 	videoWriter_.release();
-	if (pipeStarted_)
-	{
-		pipe_.stop();
-	}
 }

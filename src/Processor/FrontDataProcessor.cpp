@@ -1,6 +1,6 @@
 #include "Processor/FrontDataProcessor.hpp"
 
-void FrontDataProcessor::dataProcess(int imgWidth, int imgHeight)
+void FrontDataProcessor::dataProcess()
 {
 	std::sort(pickedBalls_.begin(), pickedBalls_.end(), [](Ball &ball1, Ball &ball2) -> bool {
 		return ball1.graphCenter().x < ball2.graphCenter().x;
@@ -56,7 +56,7 @@ void FrontDataProcessor::dataProcess(int imgWidth, int imgHeight)
 	}
 }
 
-void FrontDataProcessor::outputPosition(DataSender &dataSender)
+void FrontDataProcessor::outputData(DataSender &dataSender)
 {
 	int data[15];
 	if (baskets_.size() == 5)
@@ -90,13 +90,13 @@ void FrontDataProcessor::outputPosition(DataSender &dataSender)
 		}
 		std::cout << std::endl;
 	}
-	dataSender.writeToBuffer(4, 15, data);
+	dataSender.writeToBuffer(9, 15, data);
 }
 
 //画图
-void FrontDataProcessor::drawBoxes(WideFieldCameraLoader &wideFieldCamera)
+void FrontDataProcessor::drawBoxes(std::vector<WideFieldCameraLoader> &wideFieldCameras)
 {
-	Mat &img = wideFieldCamera.colorImg_;
+	Mat &img = wideFieldCameras.front().colorImg_;
 
 	for (Ball &tempBall: pickedBalls_)
 	{

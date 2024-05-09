@@ -13,10 +13,11 @@ private:
 	std::unique_ptr<nvinfer1::IRuntime> runtime_ = nullptr;
 	std::unique_ptr<nvinfer1::ICudaEngine> cudaEngine_ = nullptr;
 	std::unique_ptr<nvinfer1::IExecutionContext> executionContext_ = nullptr;
+	std::vector<std::vector<Ball>> detectedBalls_;
+	std::vector<std::vector<int>> pickedBallsIndex_;
 	void *gpuBuffers_[2];
 	float *inputBlob_;
 	float *cpuOutputBuffer_;
-	std::vector<Ball> detectedBalls_;
 	int inputHeight_;
 	int inputWidth_;
 	int offsetX_;
@@ -25,6 +26,8 @@ private:
 	int classNum_;
 	int inputSize_;
 	int outputSize_;
+	int inputTensorSize_;
+	int outputTensorSize_;
 	float imgRatio_;
 	int outputMaxNum_;
 	float minConfidence_;
@@ -37,16 +40,16 @@ private:
 
 	void initBuffers();
 
-	void imgProcess(Mat inputImg) override;
+public:
+	explicit TrtEngineLoader(std::string enginePath, int batchSize, float minConfidence, float maxIou);
+
+	void imgProcess(Mat inputImg, int imageId) override;
 
 	void infer() override;
 
-	void detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId) override;
+	void detectDataProcess() override;
 
-public:
-	explicit TrtEngineLoader(std::string enginePath, float minConfidence, float maxIou);
-
-	void detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId) override;
+	void getBallsByCameraId(int cameraId, std::vector<Ball> &container) override;
 
 	~TrtEngineLoader() override;
 };

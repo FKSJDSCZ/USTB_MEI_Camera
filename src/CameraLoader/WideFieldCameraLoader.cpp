@@ -1,6 +1,7 @@
 #include "CameraLoader/WideFieldCameraLoader.hpp"
 
-WideFieldCameraLoader::WideFieldCameraLoader() = default;
+WideFieldCameraLoader::WideFieldCameraLoader(int cameraId) : cameraId_(cameraId)
+{}
 
 void WideFieldCameraLoader::init(int devIndex)
 {

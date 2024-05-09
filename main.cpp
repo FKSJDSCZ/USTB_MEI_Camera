@@ -5,8 +5,7 @@
 #include "EngineLoader/IEngineLoader.hpp"
 #include "EngineLoader/TrtEngineLoader.hpp"
 #include "EngineLoader/OvEngineLoader.hpp"
-#include "CameraManager/RsCameraGroup.hpp"
-#include "CameraManager/WideFieldCameraGroup.hpp"
+#include "CameraManager/CameraManager.hpp"
 
 volatile bool interruptFlag = false;
 
@@ -25,45 +24,31 @@ int mainBody()
 
 	DataSender dataSender = DataSender(0);
 
-#if defined(WITH_CUDA)
-	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-best.engine", 0.5, 0.4);
-#elif defined(WITH_OPENVINO)
-	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-best.xml", "CPU", 0.5, 0.4);
-#endif
-	RsCameraGroup rsCameraGroup;
-//	WideFieldCameraGroup wideFieldCameraGroup;
+	CameraManager cameraManager;
+	cameraManager.initRsCamera();
+//	cameraManager.initWFCamera();
 
-	rsCameraGroup.detectRsCamera();
-	rsCameraGroup.groupInit();
-//	wideFieldCameraGroup.detectWideFieldCamera();
-//	wideFieldCameraGroup.groupInit();
+#if defined(WITH_CUDA)
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine",
+	                                               cameraManager.cameraCount_, 0.5, 0.4);
+#elif defined(WITH_OPENVINO)
+	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-dynamic-best.xml", "yolov8s-dynamic-best.bin",
+												 "CPU", cameraManager.cameraCount_, 0.5, 0.4);
+#endif
 
 	while (!interruptFlag)
 	{
-		//back
-		rsCameraGroup.groupDetect(engineLoader);
-		rsCameraGroup.backDataProcessor_.outputPosition(dataSender);
-		rsCameraGroup.groupDrawBoxes();
-#if defined(GRAPHIC_DEBUG)
-		rsCameraGroup.groupShowImages();
-#endif
-		rsCameraGroup.groupSaveVideos();
-		rsCameraGroup.backDataProcessor_.resetProcessor();
-
-		//front
-//		wideFieldCameraGroup.groupDetect(engineLoader);
-//		wideFieldCameraGroup.frontDataProcessor_.outputPosition(dataSender);
-//		wideFieldCameraGroup.groupDrawBoxes();
-//#if defined(GRAPHIC_DEBUG)
-//		wideFieldCameraGroup.groupShowImages();
-//#endif
-//		wideFieldCameraGroup.groupSaveVideos();
-//		wideFieldCameraGroup.frontDataProcessor_.resetProcessor();
-
-		//serial
+		cameraManager.detect(engineLoader);
+		cameraManager.outputData(dataSender);
 #if defined(WITH_SERIAL)
 		dataSender.sendData();
 #endif
+		cameraManager.drawBoxes();
+#if defined(GRAPHIC_DEBUG)
+		cameraManager.showImages();
+#endif
+		cameraManager.saveVideos();
+		cameraManager.resetProcessors();
 
 		if (waitKey(1) == 27)
 		{

@@ -1,12 +1,12 @@
 #include "Processor/BackDataProcessor.hpp"
 
-void BackDataProcessor::dataProcess(RsCameraLoader *rsCameraArray)
+void BackDataProcessor::dataProcess(std::vector<RsCameraLoader> &rsCameras)
 {
 	for (Ball &tempBall: pickedBalls_)
 	{
-		tempBall.setCameraPosition(rsCameraArray);
+		tempBall.setCameraPosition(rsCameras);
 		tempBall.toMillimeter();
-		tempBall.offsetToEncodingDisk(rsCameraArray);
+		tempBall.offsetToEncodingDisk(rsCameras);
 		tempBall.calcDistance();
 	}
 
@@ -23,14 +23,23 @@ void BackDataProcessor::dataProcess(RsCameraLoader *rsCameraArray)
 		}
 	}
 
-	//去重
+	//按距离排序
+	std::sort(pickedBalls_.begin(), pickedBalls_.end(), [this](Ball &ball1, Ball &ball2) -> bool {
+		if (ball1.labelNum_ == ball2.labelNum_)
+		{
+			return ball1.distance_ < ball2.distance_;
+		}
+		return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
+	});
+
+	//排序后去重
 	if (!pickedBalls_.empty())
 	{
 		auto lastIt = pickedBalls_.begin();
 		auto firstIt = lastIt++;
 		while (lastIt != pickedBalls_.end())
 		{
-			if (Functions::calcDistance3f(firstIt->cameraPosition(), lastIt->cameraPosition()) < RADIUS)
+			if (Functions::calcDistance3f(firstIt->cameraPosition(), lastIt->cameraPosition()) < 1.5 * RADIUS)
 			{
 				firstIt->merge(*lastIt);
 				pickedBalls_.erase(lastIt);
@@ -42,15 +51,6 @@ void BackDataProcessor::dataProcess(RsCameraLoader *rsCameraArray)
 			}
 		}
 	}
-
-	//按距离排序
-	std::sort(pickedBalls_.begin(), pickedBalls_.end(), [this](Ball &ball1, Ball &ball2) -> bool {
-		if (ball1.labelNum_ == ball2.labelNum_)
-		{
-			return ball1.distance_ < ball2.distance_;
-		}
-		return ballPriority_[ball1.labelNum_] < ballPriority_[ball2.labelNum_];
-	});
 
 	//判断前进路线上是否有球
 	if (!pickedBalls_.empty())
@@ -72,7 +72,7 @@ void BackDataProcessor::dataProcess(RsCameraLoader *rsCameraArray)
 }
 
 //数据输出
-void BackDataProcessor::outputPosition(DataSender &dataSender)
+void BackDataProcessor::outputData(DataSender &dataSender)
 {
 	int data[8] = {0};
 	if (!pickedBalls_.empty())
@@ -95,22 +95,22 @@ void BackDataProcessor::outputPosition(DataSender &dataSender)
 			data[7] = newLabelNum_[tempBall.labelNum_];
 		}
 	}
-	dataSender.writeToBuffer(0, 4, data);
-	dataSender.writeToBuffer(19, 1, (int *) &haveBallInFront_);
-	dataSender.writeToBuffer(20, 4, data + 4);
+	dataSender.writeToBuffer(0, 1, (int *) &haveBallInFront_);
+	dataSender.writeToBuffer(1, 8, data);
 }
 
 //画图
-void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
+void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 {
-	for (Ball &tempBall: pickedBalls_)
+	for (int i = 0; i < pickedBalls_.size(); ++i)
 	{
+		Ball &tempBall = pickedBalls_.at(i);
 		for (const BallPosition &ballPosition: tempBall.ballPositions_)
 		{
-			Mat &img = rsCameraArray[ballPosition.cameraId_].colorImg_;
+			Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
 
 			rectangle(img, ballPosition.graphRect_, RED, 2);
-			putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G"),
+			putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B " : " G ") + std::to_string(i),
 			        Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y),
 			        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 			putText(img, "x: " + std::to_string(ballPosition.cameraPosition_.x).substr(0, 6),
@@ -128,7 +128,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.front().ballPositions_)
 		{
-			Mat &img = rsCameraArray[ballPosition.cameraId_].colorImg_;
+			Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
 			rectangle(img, ballPosition.graphRect_, GREEN, 2);
 		}
 	}
@@ -136,7 +136,7 @@ void BackDataProcessor::drawBoxes(RsCameraLoader *rsCameraArray)
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.at(1).ballPositions_)
 		{
-			Mat &img = rsCameraArray[ballPosition.cameraId_].colorImg_;
+			Mat &img = rsCameras[ballPosition.cameraId_].colorImg_;
 			rectangle(img, ballPosition.graphRect_, WHITE, 2);
 		}
 	}

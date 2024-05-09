@@ -8,15 +8,14 @@
 
 class IEngineLoader
 {
-protected:
-	virtual void imgProcess(Mat inputImg) = 0;
+public:
+	virtual void imgProcess(Mat inputImg, int imageId) = 0;
 
 	virtual void infer() = 0;
 
-	virtual void detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId) = 0;
+	virtual void detectDataProcess() = 0;
 
-public:
-	virtual void detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId) = 0;
+	virtual void getBallsByCameraId(int cameraId, std::vector<Ball> &container) = 0;
 
 	virtual ~IEngineLoader() = default;
 };

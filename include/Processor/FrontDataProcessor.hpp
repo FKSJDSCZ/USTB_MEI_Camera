@@ -21,13 +21,13 @@ public:
 	std::vector<Ball> pickedBalls_;
 	std::vector<Basket> baskets_;
 
-	void dataProcess(int imgWidth, int imgHeight);
+	void dataProcess();
 
 	//数据输出
-	void outputPosition(DataSender &dataSender);
+	void outputData(DataSender &dataSender);
 
 	//画图
-	void drawBoxes(WideFieldCameraLoader &wideFieldCamera);
+	void drawBoxes(std::vector<WideFieldCameraLoader> &wideFieldCameras);
 
 	//重置处理器
 	void resetProcessor();

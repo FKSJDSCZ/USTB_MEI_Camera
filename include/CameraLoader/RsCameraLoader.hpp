@@ -27,9 +27,6 @@ private:
 	                             {-5, -5},
 	                             {5,  -5},
 	                             {-5, 5}};//深度采样的像素坐标偏移量
-	float pitchAngleDegree_;//俯角相反数
-	float yawAngleDegree_;
-	bool pipeStarted_ = false;
 	/*
 	 * ⌈    1,      0,       0      ⌉
 	 * |    0,  cos(θ), -sin(θ) |
@@ -51,10 +48,9 @@ private:
 public:
 	Mat colorImg_;
 	Parameters parameters_;
+	int cameraId_;
 
-	RsCameraLoader();
-
-	RsCameraLoader(int imgWidth, int imgHeight, int framerate, float pitchAngleDegree, float yawAngleDegree, Parameters parameters);
+	RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters);
 
 	void init(std::string &serialNumber);
 

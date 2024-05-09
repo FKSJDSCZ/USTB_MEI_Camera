@@ -11,8 +11,10 @@ public:
 	bool isInBasket_;
 	bool isValid_;
 	float distance_;
-	float confidence_;
+	float confidence_ = 0;
 	std::vector<BallPosition> ballPositions_;
+
+	int cameraId();
 
 	Point3f cameraPosition();
 
@@ -24,11 +26,11 @@ public:
 
 	void addGraphPosition(float centerX, float centerY, float width, float height, float confidence, int labelNum, int cameraId, bool isInBasket);
 
-	void setCameraPosition(RsCameraLoader *rsCameraArray);
+	void setCameraPosition(std::vector<RsCameraLoader> &rsCameras);
 
 	void toMillimeter();
 
-	void offsetToEncodingDisk(RsCameraLoader *rsCameraArray);
+	void offsetToEncodingDisk(std::vector<RsCameraLoader> &rsCameras);
 
 	void calcDistance();
 };

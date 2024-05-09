@@ -7,15 +7,12 @@ using namespace cv;
 class Parameters
 {
 public:
-	float offsetToEncodingDiskX_;
-	float offsetToEncodingDiskY_;
-	float offsetToEncodingDiskZ_;
+	float XOffsetToDisk_;
+	float YOffsetToDisk_;
+	float ZOffsetToDisk_;
+	float pitchAngle_;
+	float yawAngle_;
 	float changeRate_;
-	Point3f offsetPoint;
 
-	Parameters();
-
-	Parameters(float offsetToEncodingDiskX, float offsetToEncodingDiskY, float offsetToEncodingDiskZ, float changeRate);
-
-	void parametersInit();
+	Parameters(float XOffsetToDisk, float YOffsetToDisk, float ZOffsetToDisk, float pitchAngle, float yawAngle, float changeRate);
 };

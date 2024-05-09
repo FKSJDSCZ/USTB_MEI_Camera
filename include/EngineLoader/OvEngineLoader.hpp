@@ -9,10 +9,14 @@ class OvEngineLoader :
 		public IEngineLoader
 {
 private:
-	std::vector<Ball> detectedBalls_;
+	std::vector<std::vector<Ball>> detectedBalls_;
+	std::vector<std::vector<int>> pickedBallsIndex_;
 	ov::InferRequest inferRequest_;
+	int batchSize_;
 	int inputHeight_;
 	int inputWidth_;
+	int inputSize_;
+	int outputSize_;
 	int offsetX_;
 	int offsetY_;
 	int classNum_;
@@ -21,20 +25,20 @@ private:
 	float minConfidence_;
 	float maxIou_;
 
-	void loadEngine(std::string &modelPath_, std::string &device_);
+	void loadEngine(std::string &modelPath, std::string &binPath, std::string &device);
 
-	void setOutputSize();
+	void setInOutputSize();
 
-	void imgProcess(Mat inputImg) override;
+public:
+	OvEngineLoader(std::string modelPath, std::string binPath, std::string device, int batchSize, float minConfidence, float maxIou);
+
+	void imgProcess(Mat inputImg, int imageId) override;
 
 	void infer() override;
 
-	void detectDataProcess(std::vector<Ball> &pickedBalls, int cameraId) override;
+	void detectDataProcess() override;
 
-public:
-	OvEngineLoader(std::string modelPath, std::string device, float minConfidence, float maxIou);
-
-	void detect(Mat inputImg, std::vector<Ball> &pickedBalls, int cameraId) override;
+	void getBallsByCameraId(int cameraId, std::vector<Ball> &container) override;
 };
 
 #endif
