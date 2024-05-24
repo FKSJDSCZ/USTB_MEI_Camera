@@ -55,13 +55,13 @@ void BackDataProcessor::dataProcess(std::vector<RsCameraLoader> &rsCameras)
 	//判断前进路线上是否有球
 	if (!pickedBalls_.empty())
 	{
-		Point3f firstBallPosition = pickedBalls_.front().cameraPosition();
+		cv::Point3f firstBallPosition = pickedBalls_.front().cameraPosition();
 		float leftLimit = std::min(-ROBOT_WIDTH_LIMIT, firstBallPosition.x) - 2 * RADIUS;
 		float rightLimit = std::max(ROBOT_WIDTH_LIMIT, firstBallPosition.x) + 2 * RADIUS;
 		float frontLimit = firstBallPosition.z - RADIUS;
 		for (Ball &tempBall: pickedBalls_)
 		{
-			Point3f cameraPosition = tempBall.cameraPosition();
+			cv::Point3f cameraPosition = tempBall.cameraPosition();
 			if (cameraPosition.x > leftLimit && cameraPosition.x < rightLimit && cameraPosition.z < frontLimit)
 			{
 				haveBallInFront_ = true;
@@ -77,7 +77,7 @@ void BackDataProcessor::outputData(DataSender &dataSender)
 	int data[8] = {0};
 	if (!pickedBalls_.empty())
 	{
-		Point3i cameraPosition = pickedBalls_.front().cameraPosition();
+		cv::Point3i cameraPosition = pickedBalls_.front().cameraPosition();
 
 		data[0] = cameraPosition.x;
 		data[1] = cameraPosition.y;
@@ -107,28 +107,28 @@ void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 		Ball &tempBall = pickedBalls_.at(i);
 		for (const BallPosition &ballPosition: tempBall.ballPositions_)
 		{
-			Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
+			cv::Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
 
 			rectangle(img, ballPosition.graphRect_, RED, 2);
 			putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B " : " G ") + std::to_string(i),
-			        Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y),
-			        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y),
+			        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 			putText(img, "x: " + std::to_string(ballPosition.cameraPosition_.x).substr(0, 6),
-			        Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 12),
-			        FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 12),
+			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
 			putText(img, "y: " + std::to_string(ballPosition.cameraPosition_.y).substr(0, 6),
-			        Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 24),
-			        FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 24),
+			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
 			putText(img, "z: " + std::to_string(ballPosition.cameraPosition_.z).substr(0, 6),
-			        Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 36),
-			        FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 36),
+			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
 		}
 	}
 	if (!pickedBalls_.empty())
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.front().ballPositions_)
 		{
-			Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
+			cv::Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
 			rectangle(img, ballPosition.graphRect_, GREEN, 2);
 		}
 	}
@@ -136,7 +136,7 @@ void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.at(1).ballPositions_)
 		{
-			Mat &img = rsCameras[ballPosition.cameraId_].colorImg_;
+			cv::Mat &img = rsCameras[ballPosition.cameraId_].colorImg_;
 			rectangle(img, ballPosition.graphRect_, WHITE, 2);
 		}
 	}

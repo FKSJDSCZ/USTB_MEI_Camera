@@ -3,14 +3,14 @@
 BallPosition::BallPosition(float centerX, float centerY, float width, float height, float confidence, int cameraId) :
 		confidence_(confidence), cameraId_(cameraId)
 {
-	graphCenter_ = Point2f(centerX, centerY);
-	graphRect_ = Rect2f(centerX - width / 2, centerY - height / 2, width, height);
+	graphCenter_ = cv::Point2f(centerX, centerY);
+	graphRect_ = cv::Rect2f(centerX - width / 2, centerY - height / 2, width, height);
 }
 
-void BallPosition::setCameraPosition(Point3f cameraPosition)
+void BallPosition::setCameraPosition(cv::Point3f cameraPosition)
 {
 	cameraPosition_ = cameraPosition;
-	isValid_ = !(cameraPosition_ == Point3f(0, 0, 0));
+	isValid_ = !(cameraPosition_ == cv::Point3f(0, 0, 0));
 }
 
 void BallPosition::toMillimeter()

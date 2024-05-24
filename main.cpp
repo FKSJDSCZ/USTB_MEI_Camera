@@ -1,10 +1,7 @@
 #include <csignal>
 #include "Util/DataSender.hpp"
-#include "Processor/BackDataProcessor.hpp"
-#include "Processor/FrontDataProcessor.hpp"
 #include "EngineLoader/IEngineLoader.hpp"
 #include "EngineLoader/TrtEngineLoader.hpp"
-#include "EngineLoader/OvEngineLoader.hpp"
 #include "CameraManager/CameraManager.hpp"
 
 volatile bool interruptFlag = false;
@@ -50,13 +47,14 @@ int mainBody()
 		cameraManager.saveVideos();
 		cameraManager.resetProcessors();
 
-		if (waitKey(1) == 27)
+		if (cv::waitKey(1) == 27)
 		{
 			break;
 		}
 	}
 
-	destroyAllWindows();
+	cv::destroyAllWindows();
+	std::cout << "Exiting. Please wait a minute..." << std::endl;
 	return 0;
 }
 

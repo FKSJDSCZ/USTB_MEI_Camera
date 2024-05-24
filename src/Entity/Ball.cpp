@@ -9,7 +9,7 @@ int Ball::cameraId()
 	return ballPositions_.front().cameraId_;
 }
 
-Point3f Ball::cameraPosition()
+cv::Point3f Ball::cameraPosition()
 {
 	if (ballPositions_.empty())
 	{
@@ -18,7 +18,7 @@ Point3f Ball::cameraPosition()
 	return ballPositions_.front().cameraPosition_;
 }
 
-Rect2f Ball::graphRect()
+cv::Rect2f Ball::graphRect()
 {
 	if (ballPositions_.empty())
 	{
@@ -27,7 +27,7 @@ Rect2f Ball::graphRect()
 	return ballPositions_.front().graphRect_;
 }
 
-Point2f Ball::graphCenter()
+cv::Point2f Ball::graphCenter()
 {
 	if (ballPositions_.empty())
 	{

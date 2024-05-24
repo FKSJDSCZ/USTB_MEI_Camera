@@ -1,3 +1,7 @@
 .idea/
 cmake-build-debug/
 videos/
+test.cpp
+testTorch.cpp
+testNvcv.cpp
+testUart.cpp

@@ -22,7 +22,7 @@ void CameraManager::initRsCamera()
 
 	for (auto &&rsCamera: deviceList)
 	{
-//		rsCamera.hardware_reset();
+		rsCamera.hardware_reset();
 		std::string serialNumber = rsCamera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
 		int cameraId;
@@ -108,7 +108,7 @@ void CameraManager::detect(IEngineLoader &engineLoader)
 		}
 		else
 		{
-			engineLoader.imgProcess(rsCamera.colorImg_, rsCamera.cameraId_);
+			engineLoader.setInput(rsCamera.colorImg_, rsCamera.cameraId_);
 		}
 	}
 	for (WideFieldCameraLoader &wideFieldCamera: wideFieldCameras_)
@@ -121,11 +121,12 @@ void CameraManager::detect(IEngineLoader &engineLoader)
 		}
 		else
 		{
-			engineLoader.imgProcess(wideFieldCamera.colorImg_, wideFieldCamera.cameraId_);
+			engineLoader.setInput(wideFieldCamera.colorImg_, wideFieldCamera.cameraId_);
 		}
 	}
+	engineLoader.preProcess();
 	engineLoader.infer();
-	engineLoader.detectDataProcess();
+	engineLoader.postProcess();
 	for (RsCameraLoader &rsCamera: rsCameras_)
 	{
 		engineLoader.getBallsByCameraId(rsCamera.cameraId_, backDataProcessor_.pickedBalls_);

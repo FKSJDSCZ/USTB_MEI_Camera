@@ -96,6 +96,10 @@
   * 俯仰角和偏航角集成到Parameters，不再作为CameraLoader成员变量
   * 宏定义优化，区分R2_GEN2_VER1和R2_GEN2_VER2
   * 其他的相关优化
+* **2024/5/25**
+  * 命名空间优化
+  * TrtEngineLoader改用cv-cuda加速图像预处理，改用libtorch和torchvision加速推理后处理
+  * OvEngineLoader停止维护。相关接口类和宏定义保留。
 
 ## 使用说明
 

@@ -16,11 +16,11 @@ public:
 
 	int cameraId();
 
-	Point3f cameraPosition();
+	cv::Point3f cameraPosition();
 
-	Rect2f graphRect();
+	cv::Rect2f graphRect();
 
-	Point2f graphCenter();
+	cv::Point2f graphCenter();
 
 	void merge(Ball &ball);
 

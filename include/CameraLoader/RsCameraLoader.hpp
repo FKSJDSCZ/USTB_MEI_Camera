@@ -32,21 +32,21 @@ private:
 	 * |    0,  cos(θ), -sin(θ) |
 	 * ⌊    0,  sin(θ), cos(θ)  ⌋
 	 */
-	Mat_<float> pitchRotateMatrix_ = Mat_<float>(3, 3);
+	cv::Mat_<float> pitchRotateMatrix_ = cv::Mat_<float>(3, 3);
 	/*
 	 * ⌈ cos(θ),         0,     sin(θ)  ⌉
 	 * |        0,          1,          0   |
 	 * ⌊-sin(θ),          0,    cos(θ)  ⌋
 	 */
-	Mat_<float> yawRotateMatrix_ = Mat_<float>(3, 3);
+	cv::Mat_<float> yawRotateMatrix_ = cv::Mat_<float>(3, 3);
 	rs2::config config_;
 	rs2::align alignToColor_ = rs2::align(RS2_STREAM_COLOR);
 	rs2::pipeline pipe_;
 	rs2::frameset frameSet_;
-	VideoWriter videoWriter_;
+	cv::VideoWriter videoWriter_;
 
 public:
-	Mat colorImg_;
+	cv::Mat colorImg_;
 	Parameters parameters_;
 	int cameraId_;
 
@@ -56,7 +56,7 @@ public:
 
 	void getImage();
 
-	Point3f getCameraPosition(const Point2f &graphCenter);
+	cv::Point3f getCameraPosition(const cv::Point2f &graphCenter);
 
 	void saveImage();
 

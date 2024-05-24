@@ -7,6 +7,7 @@ set(WITH_CUDA ON)
 set(WITH_OPENVINO OFF)
 set(GRAPHIC_DEBUG ON)
 set(WITH_SERIAL OFF)
+set(IS_R2_GEN2_VER1 ON)
 
 # realsense
 include_directories(/usr/include)
@@ -20,9 +21,20 @@ if (WITH_CUDA)
     include_directories(/usr/local/cuda/include)
     # tensorrt
     include_directories(/home/ywh/TensorRT-8.6.1.6/include)
+    file(GLOB TENSORRT_LIBS /home/ywh/TensorRT-8.6.1.6/lib/*.so)
+    # cvcuda & nvcv_types
+    include_directories(/home/ywh/cvcuda/include)
+    file(GLOB CVCUDA_LIBS /home/ywh/cvcuda/lib/x86_64-linux-gnu/*.so)
+    # libtorch
+    include_directories(/home/ywh/libtorch/include)
+    include_directories(/home/ywh/libtorch/include/torch/csrc/api/include)
+    file(GLOB TORCH_LIBS /home/ywh/libtorch/lib/*.so)
+    # torchvision
+    include_directories(/home/ywh/torchvision/include)
+    file(GLOB TORCHVISION_LIBS /home/ywh/torchvision/lib/*.so)
     # add definition
     add_definitions(-DWITH_CUDA)
-    message("using cuda and tensorrt")
+    message("Using cuda")
 elseif (WITH_OPENVINO)
     # openvino
     set(OpenVINO_DIR /home/ywh/openvino/runtime/cmake)
@@ -30,12 +42,10 @@ elseif (WITH_OPENVINO)
     include_directories(/home/ywh/openvino/runtime/include)
     # add definition
     add_definitions(-DWITH_OPENVINO)
-    message("using openvino")
-else ()
-    message(FATAL_ERROR "No cuda libs or openvino libs was found")
+    message("Using openvino")
 endif ()
 
-# MEI
+# add definitions
 if (GRAPHIC_DEBUG)
     add_definitions(-DGRAPHIC_DEBUG)
 endif ()
@@ -44,11 +54,20 @@ if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
 endif ()
 
+if (IS_R2_GEN2_VER1)
+    add_definitions(-DIS_R2_GEN2_VER1)
+endif ()
+
+# MEI
 include_directories(include)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(${PROJECT_NAME}
         ${SRC_FILES}
-        main.cpp
+        #        main.cpp
+        #        test.cpp
+        #        testTorch.cpp
+        #        testNvcv.cpp
+        testUart.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -59,16 +78,13 @@ target_link_libraries(${PROJECT_NAME}
 if (WITH_CUDA)
     target_link_libraries(${PROJECT_NAME}
             cudart
-            #            nvinfer
-            /home/ywh/TensorRT-8.6.1.6/lib/libnvinfer.so
+            ${TENSORRT_LIBS}
+            ${CVCUDA_LIBS}
+            ${TORCH_LIBS}
+            ${TORCHVISION_LIBS}
     )
 elseif (WITH_OPENVINO)
     target_link_libraries(${PROJECT_NAME}
             openvino::runtime
     )
-endif ()
-
-# VCS
-if (IS_R2_GEN2_VER1)
-    add_definitions(-DIS_R2_GEN2_VER1)
 endif ()

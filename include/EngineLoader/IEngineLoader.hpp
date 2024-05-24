@@ -9,11 +9,15 @@
 class IEngineLoader
 {
 public:
-	virtual void imgProcess(Mat inputImg, int imageId) = 0;
+	virtual void setInput(cv::Mat &BGRImage, int imageId) = 0;
+
+	virtual void setInput(uint8_t *rawInput, int imageId) = 0;
+
+	virtual void preProcess() = 0;
 
 	virtual void infer() = 0;
 
-	virtual void detectDataProcess() = 0;
+	virtual void postProcess() = 0;
 
 	virtual void getBallsByCameraId(int cameraId, std::vector<Ball> &container) = 0;
 

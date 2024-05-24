@@ -36,8 +36,8 @@ void FrontDataProcessor::dataProcess()
 	for (Basket &basket: baskets_)
 	{
 		//横向筛选
-		Rect2f filterRect = Rect2f(basket.graphRect().x, basket.graphRect().y - basket.graphRect().height * 0.5f,
-		                           basket.graphRect().width, basket.graphRect().height * 1.5f);
+		cv::Rect2f filterRect = cv::Rect2f(basket.graphRect().x, basket.graphRect().y - basket.graphRect().height * 0.5f,
+		                                   basket.graphRect().width, basket.graphRect().height * 1.5f);
 		for (; ballIt != pickedBalls_.end(); ++ballIt)
 		{
 			if (filterRect.contains(ballIt->graphCenter()))
@@ -96,26 +96,26 @@ void FrontDataProcessor::outputData(DataSender &dataSender)
 //画图
 void FrontDataProcessor::drawBoxes(std::vector<WideFieldCameraLoader> &wideFieldCameras)
 {
-	Mat &img = wideFieldCameras.front().colorImg_;
+	cv::Mat &img = wideFieldCameras.front().colorImg_;
 
 	for (Ball &tempBall: pickedBalls_)
 	{
 		rectangle(img, tempBall.graphRect(), RED, 2);
 		putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B" : " G"),
-		        Point(tempBall.graphRect().x, tempBall.graphRect().y),
-		        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		        cv::Point(tempBall.graphRect().x, tempBall.graphRect().y),
+		        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 	}
 
 	for (Basket &basket: baskets_)
 	{
 		rectangle(img, basket.graphRect(), GREEN, 2);
-		putText(img, std::to_string(basket.labelNum_), Point(basket.graphRect().x, basket.graphRect().y),
-		        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+		putText(img, std::to_string(basket.labelNum_), cv::Point(basket.graphRect().x, basket.graphRect().y),
+		        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 		for (Ball &tempBall: basket.containedBalls_)
 		{
 			rectangle(img, tempBall.graphRect(), GREEN, 2);
-			putText(img, std::to_string(tempBall.labelNum_), Point(tempBall.graphRect().x, tempBall.graphRect().y),
-			        FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+			putText(img, std::to_string(tempBall.labelNum_), cv::Point(tempBall.graphRect().x, tempBall.graphRect().y),
+			        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
 		}
 	}
 }

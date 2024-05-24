@@ -33,9 +33,9 @@ void TrtEngineLoader::setInOutputSize()
 	{
 		batchSize_ = inputDims.d[0];
 	}
-	inputHeight_ = inputDims.d[2];
-	inputWidth_ = inputDims.d[3];
-	inputSize_ = inputDims.d[1] * inputHeight_ * inputWidth_;
+	inputLayerHeight_ = inputDims.d[2];
+	inputLayerWidth_ = inputDims.d[3];
+	inputSize_ = inputDims.d[1] * inputLayerHeight_ * inputLayerWidth_;
 	inputTensorSize_ = batchSize_ * inputSize_;
 
 	//以本项目所用模型为例，输出(-)1*11*34000（NHW）
@@ -51,19 +51,39 @@ void TrtEngineLoader::initBuffers()
 {
 	setInOutputSize();
 
-	cudaMalloc(&gpuBuffers_[0], inputTensorSize_ * sizeof(float));//分配显存（接收主机内存输入）
-	cudaMalloc(&gpuBuffers_[1], outputTensorSize_ * sizeof(float));//分配显存（向主机内存输出）
-
-	executionContext_->setInputShape("images", nvinfer1::Dims4{batchSize_, 3, inputWidth_, inputHeight_});
-	executionContext_->setTensorAddress("images", gpuBuffers_[0]);
-	executionContext_->setTensorAddress("output0", gpuBuffers_[1]);
+	//letterbox
+	imgRatio_ = std::min((inputLayerWidth_ * 1.) / inputImageWidth_, (inputLayerHeight_ * 1.) / inputImageHeight_);
+	int borderWidth = inputImageWidth_ * imgRatio_;
+	int borderHeight = inputImageHeight_ * imgRatio_;
+	offsetX_ = (inputLayerWidth_ - borderWidth) / 2;
+	offsetY_ = (inputLayerHeight_ - borderHeight) / 2;
 
 	cudaStreamCreate(&meiCudaStream_);
-	inputBlob_ = new float[inputTensorSize_];
-	cpuOutputBuffer_ = new float[outputTensorSize_];//主机内存接收来自GPU的推理结果
+	cudaMalloc(&gpuOutputBuffer_, outputTensorSize_ * sizeof(float));
+
+	//imageBatch
+	imageBatch_ = nvcv::TensorBatch(batchSize_);
+	for (int i = 0; i < batchSize_; ++i)
+	{
+//		imageVector_.push_back(nvcv::Tensor(1, {inputImageWidth_, inputImageHeight_}, nvcv::FMT_BGR8));
+		imageBatch_.pushBack(nvcv::Tensor(1, {inputImageWidth_, inputImageHeight_}, nvcv::FMT_BGR8));
+	}
+	//imageTensor
+	imageTensor_ = nvcv::Tensor(batchSize_, {inputImageWidth_, inputImageHeight_}, nvcv::FMT_BGR8);
+	//inputTensor
+	inputTensor_ = nvcv::Tensor(batchSize_, {inputLayerWidth_, inputLayerHeight_}, nvcv::FMT_RGBf32p);
+
+	//tensors in preprocess
+	resizedImageTensor_ = nvcv::Tensor(batchSize_, {borderWidth, borderHeight}, nvcv::FMT_BGR8);
+	rgbImageTensor_ = nvcv::Tensor(batchSize_, {borderWidth, borderHeight}, nvcv::FMT_RGB8);
+	borderImageTensor_ = nvcv::Tensor(batchSize_, {inputLayerWidth_, inputLayerHeight_}, nvcv::FMT_RGB8);
+	normalizedImageTensor_ = nvcv::Tensor(batchSize_, {inputLayerWidth_, inputLayerHeight_}, nvcv::FMT_RGBf32);
+
+	executionContext_->setInputShape("images", nvinfer1::Dims4{batchSize_, 3, inputLayerWidth_, inputLayerHeight_});
+	executionContext_->setTensorAddress("images", inputTensor_.exportData<nvcv::TensorDataStridedCuda>()->basePtr());
+	executionContext_->setTensorAddress("output0", gpuOutputBuffer_);
 
 	detectedBalls_.insert(detectedBalls_.begin(), batchSize_, {});
-	pickedBallsIndex_.insert(pickedBallsIndex_.begin(), batchSize_, {});
 }
 
 TrtEngineLoader::TrtEngineLoader(std::string enginePath, int batchSize, float minConfidence, float maxIou) :
@@ -73,119 +93,119 @@ TrtEngineLoader::TrtEngineLoader(std::string enginePath, int batchSize, float mi
 	initBuffers();
 }
 
-void TrtEngineLoader::imgProcess(Mat inputImg, int imageId)
+void TrtEngineLoader::setInput(cv::Mat &BGRImage, int imageId)
+{
+	setInput(BGRImage.data, imageId);
+}
+
+void TrtEngineLoader::setInput(uint8_t *rawInput, int imageId)
 {
 	if (imageId >= batchSize_)
 	{
 		throw std::runtime_error(std::format("ImageId {} exceeded batch size limit {}", imageId, batchSize_));
 	}
 
-	//letterbox
-	imgRatio_ = std::min((inputWidth_ * 1.) / inputImg.cols, (inputHeight_ * 1.) / inputImg.rows);
-	int borderWidth = inputImg.cols * imgRatio_;
-	int borderHeight = inputImg.rows * imgRatio_;
-	offsetX_ = (inputWidth_ - borderWidth) / 2;
-	offsetY_ = (inputHeight_ - borderHeight) / 2;
-	resize(inputImg, inputImg, Size(borderWidth, borderHeight));
-	copyMakeBorder(inputImg, inputImg, offsetY_, offsetY_, offsetX_, offsetX_, BORDER_CONSTANT, GRAY);
-	cvtColor(inputImg, inputImg, COLOR_BGR2RGB);
-
-	//HWC转CHW与归一化
-	int channels = inputImg.channels();
-	for (int c = 0; c < channels; ++c)
+	auto it = imageBatch_.begin();
+	while (--imageId >= 0)
 	{
-		for (int h = 0; h < inputHeight_; ++h)
-		{
-			for (int w = 0; w < inputWidth_; ++w)
-			{
-				inputBlob_[imageId * inputSize_ + c * inputWidth_ * inputHeight_ + h * inputWidth_ + w] = inputImg.at<Vec3b>(h, w)[c] / 255.0f;
-			}
-		}
+		it++;
 	}
+
+	auto singleImageBuffer = it->exportData<nvcv::TensorDataStridedCuda>();
+	cudaMemcpyAsync(singleImageBuffer->basePtr(), rawInput, singleImageBuffer->stride(0), cudaMemcpyHostToDevice, meiCudaStream_);
+}
+
+void TrtEngineLoader::preProcess()
+{
+	stack_(meiCudaStream_, imageBatch_, imageTensor_);
+	//resize
+	resize_(meiCudaStream_, imageTensor_, resizedImageTensor_, NVCV_INTERP_LINEAR);
+	//cvtColor(BGR -> RGB)
+	cvtColor_(meiCudaStream_, resizedImageTensor_, rgbImageTensor_, NVCV_COLOR_BGR2RGB);
+	//copyMakeBorder
+	copyMakeBorder_(meiCudaStream_, rgbImageTensor_, borderImageTensor_,
+	                offsetY_, offsetX_, NVCV_BORDER_CONSTANT, {114, 114, 114, 0});
+	//normalize
+	convertTo_(meiCudaStream_, borderImageTensor_, normalizedImageTensor_, 1.0 / 255.0, 0);
+	//reformat(NHWC -> NCHW)
+	reformat_(meiCudaStream_, normalizedImageTensor_, inputTensor_);
 }
 
 void TrtEngineLoader::infer()
 {
-	cudaMemcpyAsync(gpuBuffers_[0], inputBlob_, inputTensorSize_ * sizeof(float), cudaMemcpyHostToDevice, meiCudaStream_);//输入数据传入显存
-	auto start = std::chrono::system_clock::now();
-	executionContext_->enqueueV3(meiCudaStream_);//异步推理
-	cudaStreamSynchronize(meiCudaStream_);
-	auto end = std::chrono::system_clock::now();
-	cudaMemcpyAsync(cpuOutputBuffer_, gpuBuffers_[1], outputTensorSize_ * sizeof(float), cudaMemcpyDeviceToHost, meiCudaStream_);//推理数据传出显存
-
-//	std::cout << "[Info] Inference time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "us" << std::endl;
+	executionContext_->enqueueV3(meiCudaStream_);
+	cudaStreamSynchronize(meiCudaStream_);//wait for asynchronous inference
 }
 
-void TrtEngineLoader::detectDataProcess()
+void TrtEngineLoader::postProcess()
 {
 	for (int i = 0; i < batchSize_; ++i)
 	{
 		detectedBalls_.at(i).clear();
-		pickedBallsIndex_.at(i).clear();
 	}
 
+	torch::Tensor rawData;
+	torch::Tensor ballData;
+	torch::Tensor classConfData;
+	torch::Tensor maxConfData;
+	torch::Tensor mask;
+	torch::Tensor classIndexData;
+	torch::Tensor filteredIndex;
+	torch::Tensor basketTag;
+
+	rawData = torch::from_blob(gpuOutputBuffer_, {(classNum_ + 4) * batchSize_, outputMaxNum_}, torch::dtype(torch::kFloat).device(torch::kCUDA));
 	for (int batchSize = 0; batchSize < batchSize_; ++batchSize)
 	{
-		for (int anchor = 0; anchor < outputMaxNum_; ++anchor)
+		//NMS
+		ballData = rawData.slice(0, (classNum_ + 4) * batchSize, (classNum_ + 4) * batchSize + 4);
+		ballData = ballData.transpose(0, 1);
+		classConfData = rawData.slice(0, (classNum_ + 4) * batchSize + 4, (classNum_ + 4) * (batchSize + 1));
+
+		std::tuple<torch::Tensor, torch::Tensor> maxInfo = classConfData.max(0);
+		maxConfData = std::get<0>(maxInfo);
+		classIndexData = std::get<1>(maxInfo);
+
+		mask = maxConfData >= minConfidence_;
+		ballData = ballData.index({mask});
+		maxConfData = maxConfData.index({mask});
+		classIndexData = classIndexData.index({mask});
+
+		ballData.slice(1, 2, 3) += ballData.slice(1, 0, 1);
+		ballData.slice(1, 3, 4) += ballData.slice(1, 1, 2);
+
+		filteredIndex = vision::ops::nms(ballData, maxConfData, 0.4);
+
+		ballData = ballData.index({filteredIndex});
+		maxConfData = maxConfData.index({filteredIndex});
+		classIndexData = classIndexData.index({filteredIndex});
+
+		ballData.slice(1, 2, 3) = (ballData.slice(1, 2, 3) - ballData.slice(1, 0, 1)) / imgRatio_;
+		ballData.slice(1, 3, 4) = (ballData.slice(1, 3, 4) - ballData.slice(1, 1, 2)) / imgRatio_;
+		ballData.slice(1, 0, 1) = (ballData.slice(1, 0, 1) - offsetX_) / imgRatio_;
+		ballData.slice(1, 1, 2) = (ballData.slice(1, 1, 2) - offsetY_) / imgRatio_;
+		basketTag = classIndexData % 2 == 1;
+		classIndexData = (classIndexData / 2).to(torch::kLong);
+
+		ballData = ballData.to(torch::kCPU);
+		maxConfData = maxConfData.to(torch::kCPU);
+		classIndexData = classIndexData.to(torch::kCPU);
+		basketTag = basketTag.to(torch::kCPU);
+
+		auto ballDataAccess = ballData.accessor<float, 2>();
+		auto maxConfDataAccess = maxConfData.accessor<float, 1>();
+		auto classIndexDataAccess = classIndexData.accessor<long, 1>();
+		auto basketTagAccess = basketTag.accessor<bool, 1>();
+
+		for (int ballCount = 0; ballCount < ballData.size(0); ++ballCount)
 		{
-			// boxData = [centerX, centerY, width, height, clsConf0, clsConf1, ...]
-			float boxData[classNum_ + 4];
-			for (int row = 0; row < classNum_ + 4; ++row)
-			{
-				boxData[row] = cpuOutputBuffer_[batchSize * outputSize_ + row * outputMaxNum_ + anchor];
-			}
-
-			float *maxClassConf = std::max_element(boxData + 4, boxData + classNum_ + 4);
-			if (*maxClassConf < minConfidence_)
-			{
-				continue;
-			}
-
-			int labelNum = maxClassConf - (boxData + 4);
-			bool isInBasket = false;
-			if (labelNum % 2)
-			{
-				labelNum--;
-				isInBasket = true;
-			}
-			labelNum /= 2;
-
 			Ball ball;
-			ball.addGraphPosition((boxData[0] - offsetX_) / imgRatio_,
-			                      (boxData[1] - offsetY_) / imgRatio_,
-			                      boxData[2] / imgRatio_,
-			                      boxData[3] / imgRatio_,
-			                      *maxClassConf,
-			                      labelNum,
-			                      batchSize,
-			                      isInBasket);
+			ball.addGraphPosition(
+					ballDataAccess[ballCount][0], ballDataAccess[ballCount][1], ballDataAccess[ballCount][2], ballDataAccess[ballCount][3],
+					maxConfDataAccess[ballCount], classIndexDataAccess[ballCount], batchSize, basketTagAccess[ballCount]
+			);
 			detectedBalls_.at(batchSize).push_back(ball);
 		}
-
-		//NMS
-		sort(detectedBalls_.at(batchSize).begin(), detectedBalls_.at(batchSize).end(), [](Ball &ball1, Ball &ball2) -> bool {
-			return ball1.confidence_ > ball2.confidence_;
-		});
-
-		for (int newIndex = 0; newIndex < detectedBalls_.at(batchSize).size(); ++newIndex)
-		{
-			bool pick = true;
-			for (int pickedIndex: pickedBallsIndex_.at(batchSize))
-			{
-				if (Functions::calcIou(detectedBalls_.at(batchSize).at(pickedIndex).graphRect(),
-				                       detectedBalls_.at(batchSize).at(newIndex).graphRect()) > maxIou_)
-				{
-					pick = false;
-					break;
-				}
-			}
-			if (pick)
-			{
-				pickedBallsIndex_.at(batchSize).push_back(newIndex);
-			}
-		}
 	}
-//	std::cout << "[Info] Picked " << pickedBallsIndex.size() << " objects" << std::endl;
 }
 
 void TrtEngineLoader::getBallsByCameraId(int cameraId, std::vector<Ball> &container)
@@ -195,23 +215,16 @@ void TrtEngineLoader::getBallsByCameraId(int cameraId, std::vector<Ball> &contai
 		throw std::runtime_error(std::format("cameraId {} exceeded batch size limit {}", cameraId, batchSize_));
 	}
 
-	for (const int index: pickedBallsIndex_.at(cameraId))
+	for (const Ball &tempBall: detectedBalls_.at(cameraId))
 	{
-		Ball &tempBall = detectedBalls_.at(cameraId).at(index);
-		if (tempBall.cameraId() == cameraId)
-		{
-			container.push_back(tempBall);
-		}
+		container.push_back(tempBall);
 	}
 }
 
 TrtEngineLoader::~TrtEngineLoader()
 {
 	cudaStreamDestroy(meiCudaStream_);
-	delete[] inputBlob_;
-	delete[] cpuOutputBuffer_;
-	cudaFree(gpuBuffers_[0]);
-	cudaFree(gpuBuffers_[1]);
+	cudaFree(gpuOutputBuffer_);
 }
 
 #endif
