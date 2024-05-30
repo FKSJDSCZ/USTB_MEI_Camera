@@ -1,17 +1,20 @@
 #include <csignal>
 #include "Util/DataSender.hpp"
-#include "EngineLoader/IEngineLoader.hpp"
 #include "EngineLoader/TrtEngineLoader.hpp"
 #include "CameraManager/CameraManager.hpp"
 
-volatile bool interruptFlag = false;
+int interruptCount = 0;
 
 void signalHandler(int signal)
 {
-	interruptFlag = true;
+	interruptCount++;
 	std::string warning = std::format("Received signal {}", signal);
 	std::cerr << warning << std::endl;
-	Logger::getInstance().writeMsg(Logger::WARNING, warning);
+	LOGGER(Logger::WARNING, warning);
+	if (interruptCount >= 3)
+	{
+		exit(-1);
+	}
 }
 
 int mainBody()
@@ -19,11 +22,11 @@ int mainBody()
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
 
-	DataSender dataSender = DataSender(0);
+	auto dataSender = DataSender(0);
 
 	CameraManager cameraManager;
 	cameraManager.initRsCamera();
-//	cameraManager.initWFCamera();
+	cameraManager.initWFCamera();
 
 #if defined(WITH_CUDA)
 	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine",
@@ -33,7 +36,7 @@ int mainBody()
 												 "CPU", cameraManager.cameraCount_, 0.5, 0.4);
 #endif
 
-	while (!interruptFlag)
+	while (!interruptCount)
 	{
 		cameraManager.detect(engineLoader);
 		cameraManager.outputData(dataSender);
@@ -95,8 +98,8 @@ int main()
 	catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
-		Logger::getInstance().writeMsg(Logger::ERROR, e.what());
+		LOGGER(Logger::ERROR, e.what());
 	}
-	Logger::getInstance().writeMsg(Logger::INFO, "Program exiting");
+	LOGGER(Logger::INFO, "Program exiting");
 	return ret;
 }

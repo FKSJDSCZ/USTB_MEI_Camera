@@ -2,7 +2,6 @@
 
 #include "Entity/Ball.hpp"
 #include "Util/DataSender.hpp"
-#include "Constants.hpp"
 
 class BackDataProcessor
 {

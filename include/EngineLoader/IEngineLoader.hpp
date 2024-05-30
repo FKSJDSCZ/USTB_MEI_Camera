@@ -3,8 +3,6 @@
 #include "opencv2/opencv.hpp"
 #include "Entity/Ball.hpp"
 #include "Util/Functions.hpp"
-#include "Constants.hpp"
-#include "Util/Logger.hpp"
 
 class IEngineLoader
 {

@@ -8,7 +8,6 @@
 #include "Processor/BackDataProcessor.hpp"
 #include "Processor/FrontDataProcessor.hpp"
 #include "EngineLoader/IEngineLoader.hpp"
-#include "Util/Logger.hpp"
 
 class CameraManager
 {
@@ -17,14 +16,14 @@ private:
 	std::unordered_map<std::string, Parameters> paramsMap_ = {
 			{"308222301027",
 					Parameters(240, -605, 440, -50, -26, 1.1)},
-			{"318122303126",
+			{"318122301624",
 					Parameters(230, -490, 335, -15, -30, 1.1)}
 	};
 #else
 	std::unordered_map<std::string, Parameters> paramsMap_ = {
 			{"318122303126",
 					Parameters(-210, -430, -50, -25, 0, 1.15)},
-			{"318122301624",
+			{"135122251159",
 					Parameters(230, -600, -80, -35, 0, 1.13)}
 	};
 #endif

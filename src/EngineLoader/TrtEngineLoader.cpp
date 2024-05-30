@@ -21,7 +21,7 @@ void TrtEngineLoader::loadEngine(std::string &enginePath)
 	cudaEngine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(modelData.data(), engineSize));
 	executionContext_ = std::unique_ptr<nvinfer1::IExecutionContext>(cudaEngine_->createExecutionContext());
 
-	Logger::getInstance().writeMsg(Logger::INFO, std::format("Load engine {} successfully", enginePath));
+	LOGGER(Logger::INFO, std::format("Load engine {} successfully", enginePath));
 }
 
 void TrtEngineLoader::setInOutputSize()
@@ -65,7 +65,6 @@ void TrtEngineLoader::initBuffers()
 	imageBatch_ = nvcv::TensorBatch(batchSize_);
 	for (int i = 0; i < batchSize_; ++i)
 	{
-//		imageVector_.push_back(nvcv::Tensor(1, {inputImageWidth_, inputImageHeight_}, nvcv::FMT_BGR8));
 		imageBatch_.pushBack(nvcv::Tensor(1, {inputImageWidth_, inputImageHeight_}, nvcv::FMT_BGR8));
 	}
 	//imageTensor

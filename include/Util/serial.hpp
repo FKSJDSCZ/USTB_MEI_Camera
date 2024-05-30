@@ -9,6 +9,7 @@
 #include <termios.h>    /*PPSIX 终端控制定义*/
 #include <cerrno>      /*错误号定义*/
 #include <cstring>
+#include "define.hpp"
 
 
 //宏定义  

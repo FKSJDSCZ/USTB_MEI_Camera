@@ -10,6 +10,7 @@ private:
 	int imgWidth_;
 	int imgHeight_;
 	int framerate_;
+	bool pipeStarted_;
 	float pixelOffset_[17][2] = {{0,  0},
 	                             {0,  3},
 	                             {0,  -3},
@@ -53,6 +54,8 @@ public:
 	RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters);
 
 	void init(std::string &serialNumber);
+
+	void startPipe();
 
 	void getImage();
 

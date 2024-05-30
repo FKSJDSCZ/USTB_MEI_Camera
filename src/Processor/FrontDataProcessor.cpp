@@ -29,7 +29,7 @@ void FrontDataProcessor::dataProcess()
 	{
 		return;
 	}
-	std::cout << "[Info] Successfully detected " << baskets_.size() << " basket(s)" << std::endl;
+//	std::cout << "[Info] Successfully detected " << baskets_.size() << " basket(s)" << std::endl;
 
 	//筛选框内球
 	auto ballIt = pickedBalls_.begin();
@@ -58,14 +58,23 @@ void FrontDataProcessor::dataProcess()
 
 void FrontDataProcessor::outputData(DataSender &dataSender)
 {
-	int data[15];
-	if (baskets_.size() == 5)
+	int data[18];
+	std::fill(data, data + 18, 3);
+	if (baskets_.size() == 1)
+	{
+		int ballCount = std::min(3, static_cast<int>(baskets_.front().containedBalls_.size()));
+		for (int i = 0; i < ballCount; ++i)
+		{
+			data[15 + i] = newLabelNum_[baskets_.front().containedBalls_.at(i).labelNum_];
+		}
+	}
+	else if (baskets_.size() == 5)
 	{
 		for (int i = 0; i < 5; ++i)
 		{
 			int j = 0;
-			int size = std::min(3, static_cast<int>(baskets_.at(i).containedBalls_.size()));
-			for (; j < size; ++j)
+			int ballCount = std::min(3, static_cast<int>(baskets_.at(i).containedBalls_.size()));
+			for (; j < ballCount; ++j)
 			{
 				data[i + j * 5] = newLabelNum_[baskets_.at(i).containedBalls_.at(j).labelNum_];
 			}
@@ -74,10 +83,6 @@ void FrontDataProcessor::outputData(DataSender &dataSender)
 				data[i + j * 5] = 0;
 			}
 		}
-	}
-	else
-	{
-		std::fill(data, data + 15, 3);
 	}
 
 	//输出框中球的状态
@@ -90,7 +95,7 @@ void FrontDataProcessor::outputData(DataSender &dataSender)
 		}
 		std::cout << std::endl;
 	}
-	dataSender.writeToBuffer(9, 15, data);
+	dataSender.writeToBuffer(10, 18, data);
 }
 
 //画图

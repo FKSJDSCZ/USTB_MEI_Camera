@@ -1,5 +1,7 @@
 #include "CameraManager/CameraManager.hpp"
 
+#include <ranges>
+
 CameraManager::CameraManager() = default;
 
 void CameraManager::initRsCamera()
@@ -30,7 +32,7 @@ void CameraManager::initRsCamera()
 		if (it == paramsMap_.end())
 		{
 			std::cerr << "[Warning] Detected unregistered realsense camera " << serialNumber << std::endl;
-			Logger::getInstance().writeMsg(Logger::WARNING, std::format("Detected unregistered realsense camera {}", serialNumber));
+			LOGGER(Logger::WARNING, std::format("Detected unregistered realsense camera {}", serialNumber));
 			continue;
 		}
 		else
@@ -46,7 +48,12 @@ void CameraManager::initRsCamera()
 //		colorSensor.set_option(RS2_OPTION_HUE, 10);
 
 		std::cout << "[Info] Realsense camera " << cameraId << " connected. Serial number: " << serialNumber << std::endl;
-		Logger::getInstance().writeMsg(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraId));
+		LOGGER(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraId));
+	}
+
+	for (auto &rsCamera: rsCameras_)
+	{
+		rsCamera.startPipe();
 	}
 }
 
@@ -92,7 +99,7 @@ void CameraManager::initWFCamera()
 		wideFieldCameras_.front().init(index);
 
 		std::cout << "[Info] Wide field camera " << info << " connected" << std::endl;
-		Logger::getInstance().writeMsg(Logger::INFO, std::format("Wide field camera {} connected", info));
+		LOGGER(Logger::INFO, std::format("Wide field camera {} connected", info));
 	}
 }
 
@@ -103,8 +110,8 @@ void CameraManager::detect(IEngineLoader &engineLoader)
 		rsCamera.getImage();
 		if (rsCamera.colorImg_.empty())
 		{
-			Logger::getInstance().writeMsg(Logger::WARNING,
-			                               std::format("Ignored empty image from Realsense camera {}", rsCamera.cameraId_));
+			LOGGER(Logger::WARNING,
+			       std::format("Ignored empty image from Realsense camera {}", rsCamera.cameraId_));
 		}
 		else
 		{
@@ -116,8 +123,8 @@ void CameraManager::detect(IEngineLoader &engineLoader)
 		wideFieldCamera.getImage();
 		if (wideFieldCamera.colorImg_.empty())
 		{
-			Logger::getInstance().writeMsg(Logger::WARNING,
-			                               std::format("Ignored empty image from wide field camera {}", wideFieldCamera.cameraId_));
+			LOGGER(Logger::WARNING,
+			       std::format("Ignored empty image from wide field camera {}", wideFieldCamera.cameraId_));
 		}
 		else
 		{

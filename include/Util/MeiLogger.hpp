@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "NvInferRuntime.h"
-#include "Util/Logger.hpp"
+#include "define.hpp"
 
 class MeiLogger :
 		public nvinfer1::ILogger

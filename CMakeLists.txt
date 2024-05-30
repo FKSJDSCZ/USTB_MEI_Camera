@@ -63,11 +63,11 @@ include_directories(include)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(${PROJECT_NAME}
         ${SRC_FILES}
-        #        main.cpp
+        main.cpp
         #        test.cpp
         #        testTorch.cpp
         #        testNvcv.cpp
-        testUart.cpp
+        #        testUart.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

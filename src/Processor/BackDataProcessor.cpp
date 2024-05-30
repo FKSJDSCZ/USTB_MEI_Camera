@@ -95,8 +95,8 @@ void BackDataProcessor::outputData(DataSender &dataSender)
 			data[7] = newLabelNum_[tempBall.labelNum_];
 		}
 	}
-	dataSender.writeToBuffer(0, 1, (int *) &haveBallInFront_);
-	dataSender.writeToBuffer(1, 8, data);
+	dataSender.writeToBuffer(1, 1, (int *) &haveBallInFront_);
+	dataSender.writeToBuffer(2, 8, data);
 }
 
 //画图
