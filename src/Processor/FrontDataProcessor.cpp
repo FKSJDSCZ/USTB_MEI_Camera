@@ -99,9 +99,9 @@ void FrontDataProcessor::outputData(DataSender &dataSender)
 }
 
 //画图
-void FrontDataProcessor::drawBoxes(std::vector<WideFieldCameraLoader> &wideFieldCameras)
+void FrontDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 {
-	cv::Mat &img = wideFieldCameras.front().colorImg_;
+	cv::Mat &img = rsCameras.front().colorImg_;
 
 	for (Ball &tempBall: pickedBalls_)
 	{

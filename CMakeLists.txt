@@ -7,7 +7,6 @@ set(WITH_CUDA ON)
 set(WITH_OPENVINO OFF)
 set(GRAPHIC_DEBUG ON)
 set(WITH_SERIAL OFF)
-set(IS_R2_GEN2_VER1 ON)
 
 # realsense
 include_directories(/usr/include)
@@ -52,10 +51,6 @@ endif ()
 
 if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
-endif ()
-
-if (IS_R2_GEN2_VER1)
-    add_definitions(-DIS_R2_GEN2_VER1)
 endif ()
 
 # MEI

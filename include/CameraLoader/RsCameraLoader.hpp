@@ -11,6 +11,7 @@ private:
 	int imgHeight_;
 	int framerate_;
 	bool pipeStarted_;
+	std::string serialNumber_;
 	float pixelOffset_[17][2] = {{0,  0},
 	                             {0,  3},
 	                             {0,  -3},
@@ -47,15 +48,13 @@ private:
 	cv::VideoWriter videoWriter_;
 
 public:
+	int cameraId_;
 	cv::Mat colorImg_;
 	Parameters parameters_;
-	int cameraId_;
 
-	RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters);
+	RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters, std::string serialNumber);
 
-	void init(std::string &serialNumber);
-
-	void startPipe();
+	void init();
 
 	void getImage();
 

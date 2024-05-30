@@ -1,16 +1,21 @@
 #include "CameraLoader/RsCameraLoader.hpp"
 
-RsCameraLoader::RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters) :
-		cameraId_(cameraId), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters)
+#include <utility>
+
+RsCameraLoader::RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters, std::string serialNumber) :
+		cameraId_(cameraId), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters),
+		serialNumber_(std::move(serialNumber))
 {
 	pipeStarted_ = false;
 }
 
-void RsCameraLoader::init(std::string &serialNumber)
+void RsCameraLoader::init()
 {
-	config_.enable_device(serialNumber);
+	config_.enable_device(serialNumber_);
 	config_.enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
 	config_.enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
+	pipe_.start();
+	pipeStarted_ = true;
 
 	pitchRotateMatrix_ = (cv::Mat_<float>(3, 3) <<
 	                                            1, 0, 0,
@@ -21,13 +26,8 @@ void RsCameraLoader::init(std::string &serialNumber)
 			0, 1, 0,
 			-std::sin(parameters_.yawAngle_ * CV_PI / 180), 0, std::cos(parameters_.yawAngle_ * CV_PI / 180));
 
-	videoWriter_.open("../videos/RS" + serialNumber + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
+	videoWriter_.open("../videos/RS" + serialNumber_ + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
 	                  framerate_, cv::Size(imgWidth_, imgHeight_));
-}
-
-void RsCameraLoader::startPipe()
-{
-	pipe_.start(config_);
 }
 
 void RsCameraLoader::getImage()

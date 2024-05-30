@@ -26,7 +26,6 @@ int mainBody()
 
 	CameraManager cameraManager;
 	cameraManager.initRsCamera();
-	cameraManager.initWFCamera();
 
 #if defined(WITH_CUDA)
 	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine",

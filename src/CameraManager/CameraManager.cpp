@@ -9,103 +9,58 @@ void CameraManager::initRsCamera()
 	rs2::context context;
 	rs2::device_list deviceList = context.query_devices();
 
+	backCameras_.reserve(2);
+	frontCameras_.reserve(1);
+
 	if (!deviceList.size())
 	{
 		throw std::runtime_error("No Realsense camera detected");
 	}
-	else if (deviceList.size() == 1)
+	else if (deviceList.size() < 3)
 	{
-		std::cerr << "[Warning] Detected 1 Realsense camera successfully. Please connect more cameras" << std::endl;
+		std::cerr << "[Warning] Detected " << deviceList.size() << " Realsense camera successfully. Please connect more cameras" << std::endl;
 	}
 	else
 	{
-		std::cout << "[Info] Detected 2 Realsense cameras successfully" << std::endl;
+		std::cout << "[Info] Detected 3 Realsense cameras successfully" << std::endl;
 	}
 
 	for (auto &&rsCamera: deviceList)
 	{
-		rsCamera.hardware_reset();
+//		rsCamera.hardware_reset();
 		std::string serialNumber = rsCamera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
-		int cameraId;
 		auto it = paramsMap_.find(serialNumber);
-		if (it == paramsMap_.end())
+		if (serialNumber == frontCameraSerialNumber_)
+		{
+			frontCameras_.emplace_back(cameraCount_, 640, 480, 30, it->second, serialNumber);
+			frontCameras_.back().init();
+		}
+		else if (it != paramsMap_.end())
+		{
+			backCameras_.emplace_back(cameraCount_, 640, 480, 30, it->second, serialNumber);
+			backCameras_.back().init();
+		}
+		else
 		{
 			std::cerr << "[Warning] Detected unregistered realsense camera " << serialNumber << std::endl;
 			LOGGER(Logger::WARNING, std::format("Detected unregistered realsense camera {}", serialNumber));
 			continue;
 		}
-		else
-		{
-			cameraId = cameraCount_++;
-		}
-
-		rsCameras_.emplace_back(cameraId, 640, 480, 30, it->second);
-		rsCameras_.at(cameraId).init(serialNumber);
 
 //		std::vector<rs2::sensor> sensors = rsCamera.query_sensors();
 //		rs2::color_sensor colorSensor = rs2::color_sensor(sensors[1]);
 //		colorSensor.set_option(RS2_OPTION_HUE, 10);
 
-		std::cout << "[Info] Realsense camera " << cameraId << " connected. Serial number: " << serialNumber << std::endl;
-		LOGGER(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraId));
-	}
-
-	for (auto &rsCamera: rsCameras_)
-	{
-		rsCamera.startPipe();
-	}
-}
-
-void CameraManager::initWFCamera()
-{
-	int index = 0;
-	std::string info;
-	v4l2_capability cap{};
-	struct stat statInfo{};
-	struct group *group_;
-
-	while (index <= 20)
-	{
-		std::string cameraFilePath = "/dev/video" + std::to_string(index);
-
-		if (stat(cameraFilePath.c_str(), &statInfo) == -1)
-		{
-			index += 2;
-			continue;
-		}
-		group_ = getgrgid(statInfo.st_gid);
-		if (std::string(group_->gr_name) != "video")
-		{
-			index += 2;
-			continue;
-		}
-
-		int fd = open(cameraFilePath.c_str(), O_RDONLY);
-		ioctl(fd, VIDIOC_QUERYCAP, &cap);
-		close(fd);
-
-		info = std::string(reinterpret_cast<char *>(cap.card));
-		break;
-	}
-
-	if (info.empty())
-	{
-		throw std::runtime_error("No wide field camera detected");
-	}
-	else
-	{
-		wideFieldCameras_.emplace_back(cameraCount_++);
-		wideFieldCameras_.front().init(index);
-
-		std::cout << "[Info] Wide field camera " << info << " connected" << std::endl;
-		LOGGER(Logger::INFO, std::format("Wide field camera {} connected", info));
+		std::cout << "[Info] Realsense camera " << serialNumber << "(" << cameraCount_ << ") connected" << std::endl;
+		LOGGER(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraCount_));
+		cameraCount_++;
 	}
 }
 
 void CameraManager::detect(IEngineLoader &engineLoader)
 {
-	for (RsCameraLoader &rsCamera: rsCameras_)
+	for (RsCameraLoader &rsCamera: frontCameras_)
 	{
 		rsCamera.getImage();
 		if (rsCamera.colorImg_.empty())
@@ -118,85 +73,85 @@ void CameraManager::detect(IEngineLoader &engineLoader)
 			engineLoader.setInput(rsCamera.colorImg_, rsCamera.cameraId_);
 		}
 	}
-	for (WideFieldCameraLoader &wideFieldCamera: wideFieldCameras_)
+	for (RsCameraLoader &rsCamera: backCameras_)
 	{
-		wideFieldCamera.getImage();
-		if (wideFieldCamera.colorImg_.empty())
+		rsCamera.getImage();
+		if (rsCamera.colorImg_.empty())
 		{
 			LOGGER(Logger::WARNING,
-			       std::format("Ignored empty image from wide field camera {}", wideFieldCamera.cameraId_));
+			       std::format("Ignored empty image from Realsense camera {}", rsCamera.cameraId_));
 		}
 		else
 		{
-			engineLoader.setInput(wideFieldCamera.colorImg_, wideFieldCamera.cameraId_);
+			engineLoader.setInput(rsCamera.colorImg_, rsCamera.cameraId_);
 		}
 	}
 	engineLoader.preProcess();
 	engineLoader.infer();
 	engineLoader.postProcess();
-	for (RsCameraLoader &rsCamera: rsCameras_)
+	for (RsCameraLoader &rsCamera: frontCameras_)
+	{
+		engineLoader.getBallsByCameraId(rsCamera.cameraId_, frontDataProcessor_.pickedBalls_);
+	}
+	for (RsCameraLoader &rsCamera: backCameras_)
 	{
 		engineLoader.getBallsByCameraId(rsCamera.cameraId_, backDataProcessor_.pickedBalls_);
 	}
-	for (WideFieldCameraLoader &wideFieldCamera: wideFieldCameras_)
-	{
-		engineLoader.getBallsByCameraId(wideFieldCamera.cameraId_, frontDataProcessor_.pickedBalls_);
-	}
-	if (!rsCameras_.empty())
-	{
-		backDataProcessor_.dataProcess(rsCameras_);
-	}
-	if (!wideFieldCameras_.empty())
+	if (!frontCameras_.empty())
 	{
 		frontDataProcessor_.dataProcess();
+	}
+	if (!backCameras_.empty())
+	{
+		backDataProcessor_.dataProcess(backCameras_);
 	}
 }
 
 void CameraManager::outputData(DataSender &dataSender)
 {
-	if (!rsCameras_.empty())
-	{
-		backDataProcessor_.outputData(dataSender);
-	}
-	if (!wideFieldCameras_.empty())
+	if (!frontCameras_.empty())
 	{
 		frontDataProcessor_.outputData(dataSender);
+	}
+	if (!backCameras_.empty())
+	{
+		backDataProcessor_.outputData(dataSender);
 	}
 }
 
 void CameraManager::drawBoxes()
 {
-	if (!rsCameras_.empty())
+	if (!frontCameras_.empty())
 	{
-		backDataProcessor_.drawBoxes(rsCameras_);
+		frontDataProcessor_.drawBoxes(frontCameras_);
 	}
-	if (!wideFieldCameras_.empty())
+	if (!backCameras_.empty())
 	{
-		frontDataProcessor_.drawBoxes(wideFieldCameras_);
+		backDataProcessor_.drawBoxes(backCameras_);
 	}
 }
 
 void CameraManager::showImages()
 {
-	for (RsCameraLoader &rsCamera: rsCameras_)
+	for (RsCameraLoader &rsCamera: frontCameras_)
 	{
 		imshow("Realsense " + std::to_string(rsCamera.cameraId_), rsCamera.colorImg_);
 	}
-	for (WideFieldCameraLoader &wideFieldCamera: wideFieldCameras_)
+	for (RsCameraLoader &rsCamera: backCameras_)
 	{
-		imshow("Wide field " + std::to_string(wideFieldCamera.cameraId_), wideFieldCamera.colorImg_);
+		imshow("Realsense " + std::to_string(rsCamera.cameraId_), rsCamera.colorImg_);
 	}
 }
 
 void CameraManager::saveVideos()
 {
-	for (RsCameraLoader &rsCamera: rsCameras_)
+	for (RsCameraLoader &rsCamera: frontCameras_)
 	{
 		rsCamera.saveImage();
 	}
-	for (WideFieldCameraLoader &wideFieldCamera: wideFieldCameras_)
+	for (RsCameraLoader &rsCamera: backCameras_)
 	{
-		wideFieldCamera.saveImage();
+		rsCamera.saveImage();
 	}
 }
 
