@@ -1,6 +1,96 @@
 #include "CameraManager/CameraManager.hpp"
 
-#include <ranges>
+void CameraManager::reconnect(std::shared_ptr<RsCameraLoader> &rsCamera)
+{
+	int attemptCount = 0;
+	std::string info;
+
+	info = std::format("Thread started reconnecting realsense camera {}", rsCamera->serialNumber_);
+	std::cout << "[Info] " << info << std::endl;
+	LOGGER(Logger::INFO, info);
+
+	std::this_thread::sleep_for(std::chrono::seconds(3));
+
+	while (true)
+	{
+		rs2::context context;
+		bool isAttached = false;
+		rs2::device_list deviceList = context.query_devices();
+		for (auto &&camera: deviceList)
+		{
+			if (camera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) == rsCamera->serialNumber_)
+			{
+				isAttached = true;
+				break;
+			}
+		}
+
+		attemptCount++;
+		if (isAttached)
+		{
+			info = std::format("Attempt {}: Realsense camera {} attached", attemptCount, rsCamera->serialNumber_);
+			std::cout << "[Info] " << info << std::endl;
+			LOGGER(Logger::INFO, info);
+			break;
+		}
+		else
+		{
+			info = std::format("Attempt {}: Realsense camera {} not attached", attemptCount, rsCamera->serialNumber_);
+			std::cout << "[Warning] " << info << std::endl;
+			LOGGER(Logger::WARNING, info);
+
+			if (attemptCount == MAX_RECONNECT_ATTEMPTS_COUNT)
+			{
+				return;
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+	}
+
+	rsCamera->resetPipe();
+	info = std::format("Realsense camera {} reconnected", rsCamera->serialNumber_);
+	std::cout << "[Info] " << info << std::endl;
+	LOGGER(Logger::INFO, info);
+}
+
+void CameraManager::getImageFromCameras(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
+{
+	int status;
+	std::string info;
+	for (auto rsCamera = rsCameras.begin(); rsCamera != rsCameras.end();)
+	{
+		status = (**rsCamera).getImage();
+		if (status == SUCCESS)
+		{
+//			engineLoader.setInput((**rsCamera).colorImg_, (**rsCamera).cameraId_);
+			rsCamera++;
+		}
+		else
+		{
+			rsCameras.erase(rsCamera);
+			disConnectedCameras_.push_back(*rsCamera);
+			if (status == EMPTY_FRAME)
+			{
+				info = std::format("Empty frame from Realsense camera {}", (**rsCamera).serialNumber_);
+				std::cout << "[Warning] " << info << std::endl;
+				LOGGER(Logger::WARNING, info);
+			}
+			else    //TIME_OUT
+			{
+				info = std::format("Realsense camera {} time out. Reconnect", (**rsCamera).serialNumber_);
+				std::cout << "[Warning] " << info << std::endl;
+				LOGGER(Logger::WARNING, info);
+
+				{
+					std::lock_guard<std::mutex> lock((**rsCamera).mutex_);
+					(**rsCamera).isConnected_ = false;
+				}
+				std::thread reconnectThread(&CameraManager::reconnect, std::ref(*rsCamera));
+				reconnectThread.detach();
+			}
+		}
+	}
+}
 
 CameraManager::CameraManager() = default;
 
@@ -11,6 +101,7 @@ void CameraManager::initRsCamera()
 
 	backCameras_.reserve(2);
 	frontCameras_.reserve(1);
+	disConnectedCameras_.reserve(3);
 
 	if (!deviceList.size())
 	{
@@ -33,13 +124,23 @@ void CameraManager::initRsCamera()
 		auto it = paramsMap_.find(serialNumber);
 		if (serialNumber == frontCameraSerialNumber_)
 		{
-			frontCameras_.emplace_back(cameraCount_, 640, 480, 30, it->second, serialNumber);
-			frontCameras_.back().init();
+			frontCameras_.push_back(
+					std::make_shared<RsCameraLoader>(
+							cameraCount_, RsCameraLoader::FRONT_CAMERA, 640, 480, 30, Parameters(), serialNumber
+					)
+			);
+			frontCameras_.back()->init();
+			frontCameras_.back()->startPipe();
 		}
 		else if (it != paramsMap_.end())
 		{
-			backCameras_.emplace_back(cameraCount_, 640, 480, 30, it->second, serialNumber);
-			backCameras_.back().init();
+			backCameras_.push_back(
+					std::make_shared<RsCameraLoader>(
+							cameraCount_, RsCameraLoader::BACK_CAMERA, 640, 480, 30, it->second, serialNumber
+					)
+			);
+			backCameras_.back()->init();
+			backCameras_.back()->startPipe();
 		}
 		else
 		{
@@ -58,53 +159,50 @@ void CameraManager::initRsCamera()
 	}
 }
 
-void CameraManager::detect(IEngineLoader &engineLoader)
+void CameraManager::checkCameraStatus()
 {
-	for (RsCameraLoader &rsCamera: frontCameras_)
+	for (auto rsCamera = disConnectedCameras_.begin(); rsCamera != disConnectedCameras_.end();)
 	{
-		rsCamera.getImage();
-		if (rsCamera.colorImg_.empty())
+		bool isConnected;
 		{
-			LOGGER(Logger::WARNING,
-			       std::format("Ignored empty image from Realsense camera {}", rsCamera.cameraId_));
+			std::lock_guard<std::mutex> lock((**rsCamera).mutex_);
+			isConnected = (**rsCamera).isConnected_;
+		}
+		if (isConnected)
+		{
+			disConnectedCameras_.erase(rsCamera);
+			((**rsCamera).cameraType_ == RsCameraLoader::FRONT_CAMERA ? frontCameras_ : backCameras_).push_back(*rsCamera);
 		}
 		else
 		{
-			engineLoader.setInput(rsCamera.colorImg_, rsCamera.cameraId_);
+			rsCamera++;
 		}
 	}
-	for (RsCameraLoader &rsCamera: backCameras_)
-	{
-		rsCamera.getImage();
-		if (rsCamera.colorImg_.empty())
-		{
-			LOGGER(Logger::WARNING,
-			       std::format("Ignored empty image from Realsense camera {}", rsCamera.cameraId_));
-		}
-		else
-		{
-			engineLoader.setInput(rsCamera.colorImg_, rsCamera.cameraId_);
-		}
-	}
-	engineLoader.preProcess();
-	engineLoader.infer();
-	engineLoader.postProcess();
-	for (RsCameraLoader &rsCamera: frontCameras_)
-	{
-		engineLoader.getBallsByCameraId(rsCamera.cameraId_, frontDataProcessor_.pickedBalls_);
-	}
-	for (RsCameraLoader &rsCamera: backCameras_)
-	{
-		engineLoader.getBallsByCameraId(rsCamera.cameraId_, backDataProcessor_.pickedBalls_);
-	}
-	if (!frontCameras_.empty())
-	{
-		frontDataProcessor_.dataProcess();
-	}
-	if (!backCameras_.empty())
-	{
-		backDataProcessor_.dataProcess(backCameras_);
-	}
+}
+
+void CameraManager::detect()
+{
+	getImageFromCameras(frontCameras_);
+	getImageFromCameras(backCameras_);
+//	engineLoader.preProcess();
+//	engineLoader.infer();
+//	engineLoader.postProcess();
+//	for (auto &rsCamera: frontCameras_)
+//	{
+//		engineLoader.getBallsByCameraId(rsCamera->cameraId_, frontDataProcessor_.pickedBalls_);
+//	}
+//	for (auto &rsCamera: backCameras_)
+//	{
+//		engineLoader.getBallsByCameraId(rsCamera->cameraId_, backDataProcessor_.pickedBalls_);
+//	}
+//	if (!frontCameras_.empty())
+//	{
+//		frontDataProcessor_.dataProcess();
+//	}
+//	if (!backCameras_.empty())
+//	{
+//		backDataProcessor_.dataProcess(backCameras_);
+//	}
 }
 
 void CameraManager::outputData(DataSender &dataSender)
@@ -133,25 +231,25 @@ void CameraManager::drawBoxes()
 
 void CameraManager::showImages()
 {
-	for (RsCameraLoader &rsCamera: frontCameras_)
+	for (auto &rsCamera: frontCameras_)
 	{
-		imshow("Realsense " + std::to_string(rsCamera.cameraId_), rsCamera.colorImg_);
+		imshow("Realsense " + std::to_string(rsCamera->cameraId_), rsCamera->colorImg_);
 	}
-	for (RsCameraLoader &rsCamera: backCameras_)
+	for (auto &rsCamera: backCameras_)
 	{
-		imshow("Realsense " + std::to_string(rsCamera.cameraId_), rsCamera.colorImg_);
+		imshow("Realsense " + std::to_string(rsCamera->cameraId_), rsCamera->colorImg_);
 	}
 }
 
 void CameraManager::saveVideos()
 {
-	for (RsCameraLoader &rsCamera: frontCameras_)
+	for (auto &rsCamera: frontCameras_)
 	{
-		rsCamera.saveImage();
+		rsCamera->saveImage();
 	}
-	for (RsCameraLoader &rsCamera: backCameras_)
+	for (auto &rsCamera: backCameras_)
 	{
-		rsCamera.saveImage();
+		rsCamera->saveImage();
 	}
 }
 

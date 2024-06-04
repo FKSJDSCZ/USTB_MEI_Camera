@@ -3,7 +3,7 @@
 #if defined(WITH_CUDA)
 
 #include <iostream>
-#include "NvInferRuntime.h"
+#include <NvInferRuntime.h>
 #include "define.hpp"
 
 class MeiLogger :

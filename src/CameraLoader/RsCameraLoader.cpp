@@ -1,21 +1,18 @@
 #include "CameraLoader/RsCameraLoader.hpp"
 
-#include <utility>
-
-RsCameraLoader::RsCameraLoader(int cameraId, int imgWidth, int imgHeight, int framerate, Parameters parameters, std::string serialNumber) :
-		cameraId_(cameraId), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters),
+RsCameraLoader::RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters,
+                               std::string serialNumber) :
+		cameraId_(cameraId), cameraType_(cameraType), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters),
 		serialNumber_(std::move(serialNumber))
-{
-	pipeStarted_ = false;
-}
+{}
 
 void RsCameraLoader::init()
 {
-	config_.enable_device(serialNumber_);
-	config_.enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
-	config_.enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
-	pipe_.start();
-	pipeStarted_ = true;
+	config_ = new rs2::config;
+	config_->enable_device(serialNumber_);
+	config_->enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
+	config_->enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
+	pipe_ = new rs2::pipeline;
 
 	pitchRotateMatrix_ = (cv::Mat_<float>(3, 3) <<
 	                                            1, 0, 0,
@@ -30,12 +27,41 @@ void RsCameraLoader::init()
 	                  framerate_, cv::Size(imgWidth_, imgHeight_));
 }
 
-void RsCameraLoader::getImage()
+void RsCameraLoader::startPipe()
 {
-	frameSet_ = pipe_.wait_for_frames();
-	frameSet_ = alignToColor_.process(frameSet_);
-	rs2::video_frame colorFrame = frameSet_.get_color_frame();
-	colorImg_ = cv::Mat(cv::Size(imgWidth_, imgHeight_), CV_8UC3, (void *) colorFrame.get_data(), cv::Mat::AUTO_STEP);
+	pipe_->start(*config_);
+	pipe_->try_wait_for_frames(&frameSet_);
+}
+
+void RsCameraLoader::resetPipe()
+{
+	delete pipe_;
+	delete config_;
+	config_ = new rs2::config;
+	config_->enable_device(serialNumber_);
+	config_->enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
+	config_->enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
+	pipe_ = new rs2::pipeline;
+	startPipe();
+}
+
+int RsCameraLoader::getImage()
+{
+	if (pipe_->try_wait_for_frames(&frameSet_, RS_FRAME_TIME_OUT))
+	{
+		frameSet_ = alignToColor_.process(frameSet_);
+		rs2::video_frame colorFrame = frameSet_.get_color_frame();
+		colorImg_ = cv::Mat(cv::Size(imgWidth_, imgHeight_), CV_8UC3, (void *) colorFrame.get_data(), cv::Mat::AUTO_STEP);
+		if (colorImg_.empty())
+		{
+			return EMPTY_FRAME;
+		}
+		return SUCCESS;
+	}
+	else
+	{
+		return TIME_OUT;
+	}
 }
 
 cv::Point3f RsCameraLoader::getCameraPosition(const cv::Point2f &graphCenter)
@@ -71,11 +97,14 @@ void RsCameraLoader::saveImage()
 	videoWriter_.write(colorImg_);
 }
 
+void RsCameraLoader::stopPipe()
+{
+	pipe_->stop();
+	delete pipe_;
+	delete config_;
+}
+
 RsCameraLoader::~RsCameraLoader()
 {
-	if (pipeStarted_)
-	{
-		pipe_.stop();
-	}
 	videoWriter_.release();
 }

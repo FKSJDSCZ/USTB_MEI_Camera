@@ -86,22 +86,22 @@ void FrontDataProcessor::outputData(DataSender &dataSender)
 	}
 
 	//输出框中球的状态
-	for (int i = 2; i >= 0; --i)
-	{
-		std::cout << "[Info] " << "[Baskets Row " << std::to_string(i) << "] ";
-		for (int j = 0; j < 5; ++j)
-		{
-			std::cout << data[5 * i + j] << " ";
-		}
-		std::cout << std::endl;
-	}
+//	for (int i = 2; i >= 0; --i)
+//	{
+//		std::cout << "[Info] " << "[Baskets Row " << std::to_string(i) << "] ";
+//		for (int j = 0; j < 5; ++j)
+//		{
+//			std::cout << data[5 * i + j] << " ";
+//		}
+//		std::cout << std::endl;
+//	}
 	dataSender.writeToBuffer(10, 18, data);
 }
 
 //画图
-void FrontDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
+void FrontDataProcessor::drawBoxes(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
 {
-	cv::Mat &img = rsCameras.front().colorImg_;
+	cv::Mat &img = rsCameras.front()->colorImg_;
 
 	for (Ball &tempBall: pickedBalls_)
 	{

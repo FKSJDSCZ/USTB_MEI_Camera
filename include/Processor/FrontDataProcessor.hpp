@@ -27,7 +27,7 @@ public:
 	void outputData(DataSender &dataSender);
 
 	//画图
-	void drawBoxes(std::vector<RsCameraLoader> &rsCameras);
+	void drawBoxes(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
 
 	//重置处理器
 	void resetProcessor();

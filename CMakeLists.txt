@@ -60,14 +60,12 @@ add_executable(${PROJECT_NAME}
         ${SRC_FILES}
         main.cpp
         #        test.cpp
-        #        testTorch.cpp
-        #        testNvcv.cpp
-        #        testUart.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}
         realsense2
+        pthread
 )
 
 if (WITH_CUDA)

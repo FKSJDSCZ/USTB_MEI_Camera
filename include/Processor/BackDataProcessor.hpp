@@ -27,13 +27,13 @@ private:
 public:
 	std::vector<Ball> pickedBalls_;
 
-	void dataProcess(std::vector<RsCameraLoader> &rsCameras);
+	void dataProcess(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
 
 	//数据输出
 	void outputData(DataSender &dataSender);
 
 	//画图
-	void drawBoxes(std::vector<RsCameraLoader> &rsCameras);
+	void drawBoxes(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
 
 	//重置处理器
 	void resetProcessor();

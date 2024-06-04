@@ -1,6 +1,6 @@
 #include "Processor/BackDataProcessor.hpp"
 
-void BackDataProcessor::dataProcess(std::vector<RsCameraLoader> &rsCameras)
+void BackDataProcessor::dataProcess(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
 {
 	for (Ball &tempBall: pickedBalls_)
 	{
@@ -100,14 +100,14 @@ void BackDataProcessor::outputData(DataSender &dataSender)
 }
 
 //画图
-void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
+void BackDataProcessor::drawBoxes(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
 {
 	for (int i = 0; i < pickedBalls_.size(); ++i)
 	{
 		Ball &tempBall = pickedBalls_.at(i);
 		for (const BallPosition &ballPosition: tempBall.ballPositions_)
 		{
-			cv::Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
+			cv::Mat &img = rsCameras.at(ballPosition.cameraId_)->colorImg_;
 
 			rectangle(img, ballPosition.graphRect_, RED, 2);
 			putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B " : " G ") + std::to_string(i),
@@ -128,7 +128,7 @@ void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.front().ballPositions_)
 		{
-			cv::Mat &img = rsCameras.at(ballPosition.cameraId_).colorImg_;
+			cv::Mat &img = rsCameras.at(ballPosition.cameraId_)->colorImg_;
 			rectangle(img, ballPosition.graphRect_, GREEN, 2);
 		}
 	}
@@ -136,7 +136,7 @@ void BackDataProcessor::drawBoxes(std::vector<RsCameraLoader> &rsCameras)
 	{
 		for (const BallPosition &ballPosition: pickedBalls_.at(1).ballPositions_)
 		{
-			cv::Mat &img = rsCameras[ballPosition.cameraId_].colorImg_;
+			cv::Mat &img = rsCameras.at(ballPosition.cameraId_)->colorImg_;
 			rectangle(img, ballPosition.graphRect_, WHITE, 2);
 		}
 	}

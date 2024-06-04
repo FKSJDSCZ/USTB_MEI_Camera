@@ -61,13 +61,13 @@ void Ball::addGraphPosition(float centerX, float centerY, float width, float hei
 	}
 }
 
-void Ball::setCameraPosition(std::vector<RsCameraLoader> &rsCameras)
+void Ball::setCameraPosition(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
 {
 	isValid_ = false;
 
 	for (BallPosition &ballPosition: ballPositions_)
 	{
-		ballPosition.setCameraPosition(rsCameras.at(ballPosition.cameraId_).getCameraPosition(ballPosition.graphCenter_));
+		ballPosition.setCameraPosition(rsCameras.at(ballPosition.cameraId_)->getCameraPosition(ballPosition.graphCenter_));
 		isValid_ |= ballPosition.isValid_;
 	}
 }
@@ -80,11 +80,11 @@ void Ball::toMillimeter()
 	}
 }
 
-void Ball::offsetToEncodingDisk(std::vector<RsCameraLoader> &rsCameras)
+void Ball::offsetToEncodingDisk(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
 {
 	for (BallPosition &ballPosition: ballPositions_)
 	{
-		ballPosition.offsetToEncodingDisk(rsCameras.at(ballPosition.cameraId_).parameters_);
+		ballPosition.offsetToEncodingDisk(rsCameras.at(ballPosition.cameraId_)->parameters_);
 	}
 }
 

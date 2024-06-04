@@ -7,11 +7,11 @@ int interruptCount = 0;
 
 void signalHandler(int signal)
 {
-	interruptCount++;
 	std::string warning = std::format("Received signal {}", signal);
 	std::cerr << warning << std::endl;
 	LOGGER(Logger::WARNING, warning);
-	if (interruptCount >= 3)
+	interruptCount++;
+	if (interruptCount >= MAX_INTERRUPT_COUNT)
 	{
 		exit(-1);
 	}
@@ -28,8 +28,7 @@ int mainBody()
 	cameraManager.initRsCamera();
 
 #if defined(WITH_CUDA)
-	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine",
-	                                               cameraManager.cameraCount_, 0.5, 0.4);
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine", cameraManager.cameraCount_, 0.5, 0.4);
 #elif defined(WITH_OPENVINO)
 	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-dynamic-best.xml", "yolov8s-dynamic-best.bin",
 												 "CPU", cameraManager.cameraCount_, 0.5, 0.4);
@@ -37,7 +36,8 @@ int mainBody()
 
 	while (!interruptCount)
 	{
-		cameraManager.detect(engineLoader);
+		cameraManager.checkCameraStatus();
+		cameraManager.detect();
 		cameraManager.outputData(dataSender);
 #if defined(WITH_SERIAL)
 		dataSender.sendData();
@@ -56,6 +56,7 @@ int mainBody()
 	}
 
 	cv::destroyAllWindows();
+
 	std::cout << "Exiting. Please wait a minute..." << std::endl;
 	return 0;
 }
@@ -96,7 +97,7 @@ int main()
 	}
 	catch (std::exception &e)
 	{
-		std::cerr << e.what() << std::endl;
+		std::cerr << "[Error] " << e.what() << std::endl;
 		LOGGER(Logger::ERROR, e.what());
 	}
 	LOGGER(Logger::INFO, "Program exiting");
