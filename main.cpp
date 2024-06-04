@@ -1,7 +1,8 @@
 #include <csignal>
-#include "Util/DataSender.hpp"
-#include "EngineLoader/TrtEngineLoader.hpp"
-#include "CameraManager/CameraManager.hpp"
+#include "Loaders/TrtEngineLoader.hpp"
+#include "Managers/DataCenter.hpp"
+#include "Managers/CameraManager.hpp"
+#include "Managers/VideoSaver.hpp"
 
 int interruptCount = 0;
 
@@ -27,37 +28,49 @@ int mainBody()
 	CameraManager cameraManager;
 	cameraManager.initRsCamera();
 
-#if defined(WITH_CUDA)
+	DataCenter dataCenter;
+
+	VideoSaver videoSaver;
+	videoSaver.start(cameraManager);
+
 	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine", cameraManager.cameraCount_, 0.5, 0.4);
-#elif defined(WITH_OPENVINO)
-	OvEngineLoader engineLoader = OvEngineLoader("yolov8s-dynamic-best.xml", "yolov8s-dynamic-best.bin",
-												 "CPU", cameraManager.cameraCount_, 0.5, 0.4);
-#endif
+
+	cameraManager.startUpdateThread();
 
 	while (!interruptCount)
 	{
-		cameraManager.checkCameraStatus();
-		cameraManager.detect();
-		cameraManager.outputData(dataSender);
+		dataCenter.clearAll();
+
+		cameraManager.getCameraImage(dataCenter.cameraImages_);
+		dataCenter.setInput(engineLoader);
+		engineLoader.preProcess();
+		engineLoader.infer();
+		engineLoader.postProcess();
+		dataCenter.getBallData(engineLoader);
+		dataCenter.processFrontData();
+		dataCenter.processBackData(cameraManager.rsCameras_);
+		dataCenter.setSenderBufer(dataSender);
 #if defined(WITH_SERIAL)
 		dataSender.sendData();
 #endif
-		cameraManager.drawBoxes();
+		dataCenter.drawFrontImage();
+		dataCenter.drawBackImage();
 #if defined(GRAPHIC_DEBUG)
-		cameraManager.showImages();
+		videoSaver.show(dataCenter.cameraImages_);
 #endif
-		cameraManager.saveVideos();
-		cameraManager.resetProcessors();
+		videoSaver.write(dataCenter.cameraImages_);
 
 		if (cv::waitKey(1) == 27)
 		{
 			break;
 		}
 	}
+	std::cout << "Exiting. Please wait a minute..." << std::endl;
 
 	cv::destroyAllWindows();
+	cameraManager.stopUpdateThread();
+	videoSaver.finish();
 
-	std::cout << "Exiting. Please wait a minute..." << std::endl;
 	return 0;
 }
 

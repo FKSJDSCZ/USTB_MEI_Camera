@@ -1,4 +1,4 @@
-#include "Util/DataSender.hpp"
+#include "Managers/DataSender.hpp"
 
 int DataSender::timeStamp_ = 0;
 
@@ -36,26 +36,25 @@ void DataSender::writeToBuffer(int startIndex, int dataNum, const int *inputData
 void DataSender::sendData()
 {
 	dataBuffer_[0] = timeStamp_++;
-	unsigned char data[wordCount_ * 2 + 2];
+	unsigned char data[WORDCOUNT * 2 + 2];
 
 	data[0] = 0xaa;
-	for (int i = 0; i < wordCount_; ++i)
+	for (int i = 0; i < WORDCOUNT; ++i)
 	{
 		data[i * 2 + 1] = dataBuffer_[i] >> 8;
 		data[i * 2 + 2] = dataBuffer_[i];
 	}
-	data[wordCount_ * 2 + 1] = 0xbb;
+	data[WORDCOUNT * 2 + 1] = 0xbb;
 
-	int len = UART0_Send(fd_, data, wordCount_ * 2 + 2);
+	int len = UART0_Send(fd_, data, WORDCOUNT * 2 + 2);
 	if (len > 0)
 	{
 		std::cout << "[Info] data:\t\t";
-		for (int i = 0; i < wordCount_; ++i)
+		for (int i: dataBuffer_)
 		{
-			std::cout << dataBuffer_[i] << " ";
+			std::cout << i << " ";
 		}
 		std::cout << std::endl;
-//		std::cout << "[Info] Send " << len << " data successfully" << std::endl;
 	}
 	else
 	{

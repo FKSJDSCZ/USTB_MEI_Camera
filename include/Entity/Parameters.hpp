@@ -1,6 +1,5 @@
 #pragma once
 
-#include "opencv2/opencv.hpp"
 #include "define.hpp"
 
 class Parameters
