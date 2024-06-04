@@ -1,14 +1,16 @@
 #pragma once
 
+#include <queue>
 #include <atomic>
 #include <mutex>
-#include "librealsense2/rs.hpp"
 #include "Entity/Parameters.hpp"
 
 
 class RsCameraLoader
 {
 private:
+	int getFrameFromHardware(FrameData &frameData);
+
 	float pixelOffset_[17][2] = {{0,  0},
 	                             {0,  3},
 	                             {0,  -3},
@@ -25,59 +27,38 @@ private:
 	                             {5,  5},
 	                             {-5, -5},
 	                             {5,  -5},
-	                             {-5, 5}};//深度采样的像素坐标偏移量
-	/*
-	 * ⌈    1,      0,       0      ⌉
-	 * |    0,  cos(θ), -sin(θ) |
-	 * ⌊    0,  sin(θ), cos(θ)  ⌋
-	 */
+	                             {-5, 5}};
 	cv::Mat_<float> pitchRotateMatrix_ = cv::Mat_<float>(3, 3);
-	/*
-	 * ⌈ cos(θ),         0,     sin(θ)  ⌉
-	 * |        0,          1,          0   |
-	 * ⌊-sin(θ),          0,    cos(θ)  ⌋
-	 */
 	cv::Mat_<float> yawRotateMatrix_ = cv::Mat_<float>(3, 3);
 
-	rs2::pipeline *pipe_;
-	rs2::config *config_;
+	rs2::pipeline pipe_;
+	rs2::config config_;
 	rs2::align alignToColor_ = rs2::align(RS2_STREAM_COLOR);
-	rs2::frameset frameSet_;
-	cv::VideoWriter videoWriter_;
+	rs2::frameset currentFrameSet_;
+	std::mutex queueMutex_;
+	std::queue<FrameData> frameQueue_;
 
 public:
-	enum CameraType
-	{
-		FRONT_CAMERA = 0,
-		BACK_CAMERA = 1
-	};
-
 	int cameraId_;
 	int cameraType_;
-	std::string serialNumber_;
 	int imgWidth_;
 	int imgHeight_;
 	int framerate_;
-	cv::Mat colorImg_;
+	bool isRunning_ = true;
 	Parameters parameters_;
-	std::atomic<bool> isConnected_{true};
-	std::mutex mutex_;
+	std::string serialNumber_;
 
 	RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters, std::string serialNumber);
 
 	void init();
 
-	void startPipe();
+	int startPipe();
 
-	void resetPipe();
+	void updateFrame();
 
-	int getImage();
+	int getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage);
 
 	cv::Point3f getCameraPosition(const cv::Point2f &graphCenter);
 
-	void saveImage();
-
 	void stopPipe();
-
-	~RsCameraLoader();
 };

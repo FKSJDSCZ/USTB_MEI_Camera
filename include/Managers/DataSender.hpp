@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-#include "serial.hpp"
+#include "Util/serial.hpp"
 
 class DataSender
 {
@@ -9,7 +9,7 @@ private:
 	int fd_;
 	static int timeStamp_;
 	/// \brief number of words in A data packet, excluding start and end of packet
-	static constexpr int wordCount_ = 28;
+	static constexpr int WORDCOUNT = 28;
 	/// \brief	[0]time stamp start from 0
 	/// 			[1]ball flag
 	/// 			[2-5]first nearest ball, including position in camera coordinate system(x, y, z) and label
@@ -18,7 +18,7 @@ private:
 	/// 			[15-19]ball labels of row1
 	/// 			[20-24]ball labels of row2
 	/// 			[25-27]ball labels in A basket for close-basket competition, which counts from bottom to top
-	int dataBuffer_[wordCount_];
+	int dataBuffer_[WORDCOUNT];
 
 public:
 	explicit DataSender(int devIndex);

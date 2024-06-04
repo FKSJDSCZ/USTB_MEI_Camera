@@ -1,6 +1,6 @@
 #if defined(WITH_CUDA)
 
-#include "EngineLoader/TrtEngineLoader.hpp"
+#include "Loaders/TrtEngineLoader.hpp"
 
 void TrtEngineLoader::loadEngine(std::string &enginePath)
 {

@@ -101,9 +101,12 @@
   * TrtEngineLoader改用cv-cuda加速图像预处理，改用libtorch和torchvision加速推理后处理
   * OvEngineLoader停止维护。相关接口类和宏定义保留。
 * **2024/5/30**
-* RsCamera启动优化
-* 添加常量宏定义，日志记录优化
-* FrontDataProcessor修改逻辑，识别一个框和球作为近框决策
+  * RsCamera启动优化
+  * 添加常量宏定义，日志记录优化
+  * FrontDataProcessor修改逻辑，识别一个框和球作为近框决策
+* **2024/6/4**
+  * 项目整体结构重构与优化
+  * 为每个相机单独创建一个线程，防止断连阻塞主线程
 
 ## 使用说明
 

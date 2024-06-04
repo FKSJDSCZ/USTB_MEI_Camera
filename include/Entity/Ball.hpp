@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CameraLoader/RsCameraLoader.hpp"
+#include "Loaders/RsCameraLoader.hpp"
 #include "Entity/BallPosition.hpp"
 
 
