@@ -66,7 +66,7 @@ public:
 
 	void processBackData(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
 
-	void setSenderBufer(DataSender &dataSender);
+	void setSenderBuffer(DataSender &dataSender);
 
 	void drawFrontImage();
 

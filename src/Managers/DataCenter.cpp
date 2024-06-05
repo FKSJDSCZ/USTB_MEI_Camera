@@ -145,7 +145,7 @@ void DataCenter::processBackData(std::vector<std::shared_ptr<RsCameraLoader>> &r
 	}
 }
 
-void DataCenter::setSenderBufer(DataSender &dataSender)
+void DataCenter::setSenderBuffer(DataSender &dataSender)
 {
 	int backData[8] = {0};
 	if (!backBalls_.empty())

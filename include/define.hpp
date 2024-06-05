@@ -15,7 +15,7 @@
 
 #define RS_FRAME_TIME_OUT                                   100
 #define MAX_FRAME_QUEUE_SIZE                              5
-#define MAX_RECONNECT_ATTEMPTS_COUNT              3
+#define MAX_RECONNECT_ATTEMPTS_COUNT              5
 #define MAX_INTERRUPT_COUNT                                3
 
 struct FrameData
@@ -35,7 +35,8 @@ enum StatusCode
 {
 	SUCCESS = 0,
 	NO_FRAME = 1,
-	TIME_OUT = 2
+	TIME_OUT = 2,
+	FAILURE = 3
 };
 
 enum CameraType

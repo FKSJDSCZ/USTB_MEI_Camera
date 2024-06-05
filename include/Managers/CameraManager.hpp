@@ -1,6 +1,5 @@
 #pragma once
 
-#include <thread>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <grp.h>

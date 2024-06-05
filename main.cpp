@@ -4,14 +4,14 @@
 #include "Managers/CameraManager.hpp"
 #include "Managers/VideoSaver.hpp"
 
-int interruptCount = 0;
+std::atomic<int> interruptCount = 0;
 
 void signalHandler(int signal)
 {
+	interruptCount++;
 	std::string warning = std::format("Received signal {}", signal);
 	std::cerr << warning << std::endl;
 	LOGGER(Logger::WARNING, warning);
-	interruptCount++;
 	if (interruptCount >= MAX_INTERRUPT_COUNT)
 	{
 		exit(-1);
@@ -49,7 +49,7 @@ int mainBody()
 		dataCenter.getBallData(engineLoader);
 		dataCenter.processFrontData();
 		dataCenter.processBackData(cameraManager.rsCameras_);
-		dataCenter.setSenderBufer(dataSender);
+		dataCenter.setSenderBuffer(dataSender);
 #if defined(WITH_SERIAL)
 		dataSender.sendData();
 #endif
@@ -60,14 +60,18 @@ int mainBody()
 #endif
 		videoSaver.write(dataCenter.cameraImages_);
 
+#if defined(GRAPHIC_DEBUG)
 		if (cv::waitKey(1) == 27)
 		{
 			break;
 		}
+#endif
 	}
 	std::cout << "Exiting. Please wait a minute..." << std::endl;
 
+#if defined(GRAPHIC_DEBUG)
 	cv::destroyAllWindows();
+#endif
 	cameraManager.stopUpdateThread();
 	videoSaver.finish();
 

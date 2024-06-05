@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thread>
 #include <queue>
 #include <atomic>
 #include <mutex>
@@ -10,6 +11,8 @@ class RsCameraLoader
 {
 private:
 	int getFrameFromHardware(FrameData &frameData);
+
+	int reconnect();
 
 	float pixelOffset_[17][2] = {{0,  0},
 	                             {0,  3},
@@ -35,6 +38,7 @@ private:
 	rs2::config config_;
 	rs2::align alignToColor_ = rs2::align(RS2_STREAM_COLOR);
 	rs2::frameset currentFrameSet_;
+
 	std::mutex queueMutex_;
 	std::queue<FrameData> frameQueue_;
 
