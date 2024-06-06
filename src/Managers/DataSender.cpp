@@ -11,18 +11,18 @@ DataSender::DataSender(int devIndex)
 
 void DataSender::portInit(int devIndex)
 {
-	fd_ = UART0_Open(fd_, ("/dev/ttyUSB" + std::to_string(devIndex)).c_str());
-	if (fd_ == FALSE)
+	fd_ = openUartSerial(("/dev/ttyUSB" + std::to_string(devIndex)).c_str());
+	if (fd_ == FAILURE)
 	{
 		throw std::runtime_error("Error opening serial file");
 	}
-	int ret = UART0_Init(fd_, 115200, 0, 8, 1, 'N');
-	if (ret == FALSE)
+
+	if (initUartSerial(fd_, B115200, NO_FLOW_CONTROL, 8, ONE_STOP_BIT, NO_PARITY) == FAILURE)
 	{
 		throw std::runtime_error("Error initialize serial port");
 	}
 
-	LOGGER(Logger::INFO, "Init serial successfully");
+	LOGGER(Logger::INFO, "Init serial successfully", true);
 }
 
 void DataSender::writeToBuffer(int startIndex, int dataNum, const int *inputData)
@@ -46,7 +46,7 @@ void DataSender::sendData()
 	}
 	data[WORDCOUNT * 2 + 1] = 0xbb;
 
-	int len = UART0_Send(fd_, data, WORDCOUNT * 2 + 2);
+	int len = sendUartSerial(fd_, data, WORDCOUNT * 2 + 2);
 	if (len > 0)
 	{
 		std::cout << "[Info] data:\t\t";
@@ -60,4 +60,9 @@ void DataSender::sendData()
 	{
 		std::cerr << "[Warning] Send data failed" << std::endl;
 	}
+}
+
+DataSender::~DataSender()
+{
+	closeUartSerial(fd_);
 }

@@ -21,7 +21,7 @@ void TrtEngineLoader::loadEngine(std::string &enginePath)
 	cudaEngine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(modelData.data(), engineSize));
 	executionContext_ = std::unique_ptr<nvinfer1::IExecutionContext>(cudaEngine_->createExecutionContext());
 
-	LOGGER(Logger::INFO, std::format("Load engine {} successfully", enginePath));
+	LOGGER(Logger::INFO, std::format("Load engine {} successfully", enginePath), true);
 }
 
 void TrtEngineLoader::setInOutputSize()

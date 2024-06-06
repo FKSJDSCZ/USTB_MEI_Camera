@@ -17,11 +17,7 @@ int RsCameraLoader::getFrameFromHardware(FrameData &frameData)
 int RsCameraLoader::reconnect() try
 {
 	int attemptCount = 0;
-	std::string info;
-
-	info = std::format("Started reconnecting realsense camera {}", serialNumber_);
-	std::cout << "[Info] " << info << std::endl;
-	LOGGER(Logger::INFO, info);
+	LOGGER(Logger::INFO, std::format("Started reconnecting realsense camera {}", serialNumber_), true);
 
 	while (true)
 	{
@@ -39,16 +35,12 @@ int RsCameraLoader::reconnect() try
 		attemptCount++;
 		if (isAttached)
 		{
-			info = std::format("Attempt {}: Realsense camera {} attached", attemptCount, serialNumber_);
-			std::cout << "[Info] " << info << std::endl;
-			LOGGER(Logger::INFO, info);
+			LOGGER(Logger::INFO, std::format("Attempt {}: Realsense camera {} attached", attemptCount, serialNumber_), true);
 			break;
 		}
 		else
 		{
-			info = std::format("Attempt {}: Realsense camera {} not attached", attemptCount, serialNumber_);
-			std::cout << "[Warning] " << info << std::endl;
-			LOGGER(Logger::WARNING, info);
+			LOGGER(Logger::WARNING, std::format("Attempt {}: Realsense camera {} not attached", attemptCount, serialNumber_), true);
 
 			if (attemptCount == MAX_RECONNECT_ATTEMPTS_COUNT)
 			{
@@ -62,16 +54,12 @@ int RsCameraLoader::reconnect() try
 	pipe_ = rs2::pipeline();
 	init();
 	startPipe();
-	info = std::format("Realsense camera {} reconnected", serialNumber_);
-	std::cout << "[Info] " << info << std::endl;
-	LOGGER(Logger::INFO, info);
+	LOGGER(Logger::INFO, std::format("Realsense camera {} reconnected", serialNumber_), true);
 	return SUCCESS;
 }
 catch (std::exception &e)
 {
-	std::string info = std::format("Error reconnect realsense camera {}: {}", serialNumber_, e.what());
-	std::cout << "[Error] " << info << std::endl;
-	LOGGER(Logger::ERROR, info);
+	LOGGER(Logger::ERROR, std::format("Error reconnect realsense camera {}: {}", serialNumber_, e.what()), true);
 }
 
 RsCameraLoader::RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters,
@@ -112,7 +100,6 @@ int RsCameraLoader::startPipe()
 
 void RsCameraLoader::updateFrame()
 {
-	std::string info;
 	FrameData frameData;
 
 	while (isRunning_)
@@ -128,9 +115,7 @@ void RsCameraLoader::updateFrame()
 		}
 		else
 		{
-			info = std::format("Realsense camera {} disconnected", serialNumber_);
-			std::cout << "[Warning] " << info << std::endl;
-			LOGGER(Logger::WARNING, info);
+			LOGGER(Logger::WARNING, std::format("Realsense camera {} disconnected", serialNumber_), true);
 			if (reconnect() == SUCCESS)
 			{
 				continue;
@@ -141,9 +126,7 @@ void RsCameraLoader::updateFrame()
 			}
 		}
 	}
-	info = std::format("Sub-thread of realsense camera {} quited", serialNumber_);
-	std::cout << "[Info] " << info << std::endl;
-	LOGGER(Logger::INFO, info);
+	LOGGER(Logger::INFO, std::format("Sub-thread of realsense camera {} quited", serialNumber_), true);
 }
 
 int RsCameraLoader::getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage)

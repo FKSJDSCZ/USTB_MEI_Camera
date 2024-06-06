@@ -47,8 +47,7 @@ void CameraManager::initRsCamera()
 		}
 		else
 		{
-			std::cerr << "[Warning] Detected unregistered realsense camera " << serialNumber << std::endl;
-			LOGGER(Logger::WARNING, std::format("Detected unregistered realsense camera {}", serialNumber));
+			LOGGER(Logger::WARNING, std::format("Detected unregistered realsense camera {}", serialNumber), true);
 			continue;
 		}
 
@@ -56,8 +55,7 @@ void CameraManager::initRsCamera()
 //		rs2::color_sensor colorSensor = rs2::color_sensor(sensors[1]);
 //		colorSensor.set_option(RS2_OPTION_HUE, 10);
 
-		std::cout << "[Info] Realsense camera " << serialNumber << "(" << cameraCount_ << ") connected" << std::endl;
-		LOGGER(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraCount_));
+		LOGGER(Logger::INFO, std::format("Realsense camera {}({}) connected", serialNumber, cameraCount_), true);
 		cameraCount_++;
 	}
 }

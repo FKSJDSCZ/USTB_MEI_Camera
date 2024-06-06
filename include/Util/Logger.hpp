@@ -29,7 +29,7 @@ public:
 
 	static Logger &getInstance();
 
-	void writeMsg(int infoType, const std::string &message);
+	void writeMsg(int infoType, const std::string &message, bool consoleIO);
 
 	~Logger();
 };

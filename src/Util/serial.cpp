@@ -1,70 +1,45 @@
 #include "Util/serial.hpp"
 
-int UART0_Open(int fd, const char *port)
+int openUartSerial(const char *port)
 {
-
-	fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
-	if (FALSE == fd)
+	int fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
+	if (fd == -1)
 	{
-		perror("Can't Open Serial Port");
-		return FALSE;
+		LOGGER(Logger::ERROR, "Error opening serial file", false);
+		return FAILURE;
 	}
-	//恢复串口为阻塞状态
+
+	//无数据则阻塞，处于等待状态
 	if (fcntl(fd, F_SETFL, 0) < 0)
 	{
-		printf("fcntl failed!\n");
-		return FALSE;
+		LOGGER(Logger::ERROR, "Error setting file status flag", false);
+		return FAILURE;
 	}
-	else
-	{
-		printf("fcntl=%d\n", fcntl(fd, F_SETFL, 0));
-	}
+
 	//测试是否为终端设备
-	if (0 == isatty(STDIN_FILENO))
+	if (!isatty(STDIN_FILENO))
 	{
-		printf("standard input is not a terminal device\n");
-		return FALSE;
+		LOGGER(Logger::ERROR, "Not a terminal device", false);
+		return FAILURE;
 	}
-	else
-	{
-		printf("isatty success!\n");
-	}
-	printf("fd->open=%d\n", fd);
 	return fd;
 }
 
-void UART0_Close(int fd)
+int initUartSerial(int fd, int speedCode, int flowControlFlag, int dataBits, int stopBit, int parityBit)
 {
-	close(fd);
-}
+	struct termios options{};
 
-int UART0_Init(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
-{
-
-	int i;
-	int status;
-	int speed_arr[] = {B115200, B19200, B9600, B4800, B2400, B1200, B300};
-	int name_arr[] = {115200, 19200, 9600, 4800, 2400, 1200, 300};
-
-	struct termios options;
-
-	/*tcgetattr(fd,&options)得到与fd指向对象的相关参数，并将它们保存于options,该函数还可以测试配置是否正确，该串口是否可用等。若调用成功，函数返回值为0，若调用失败，函数返回值为1.
-    */
+	//得到与fd指向对象的相关参数，并将它们保存于options，该函数还可以测试配置是否正确，该串口是否可用等
+	//若调用成功，函数返回值为0，若调用失败，函数返回值为1
 	if (tcgetattr(fd, &options) != 0)
 	{
-		perror("SetupSerial 1");
-		return (FALSE);
+		LOGGER(Logger::ERROR, "Error getting terminal attribute", false);
+		return FAILURE;
 	}
 
 	//设置串口输入波特率和输出波特率
-	for (i = 0; i < sizeof(speed_arr) / sizeof(int); i++)
-	{
-		if (speed == name_arr[i])
-		{
-			cfsetispeed(&options, speed_arr[i]);
-			cfsetospeed(&options, speed_arr[i]);
-		}
-	}
+	cfsetispeed(&options, speedCode);
+	cfsetospeed(&options, speedCode);
 
 	//修改控制模式，保证程序不会占用串口
 	options.c_cflag |= CLOCAL;
@@ -72,81 +47,73 @@ int UART0_Init(int fd, int speed, int flow_ctrl, int databits, int stopbits, int
 	options.c_cflag |= CREAD;
 
 	//设置数据流控制
-	switch (flow_ctrl)
+	switch (flowControlFlag)
 	{
-
-		case 0 ://不使用流控制
+		case NO_FLOW_CONTROL:
 			options.c_cflag &= ~CRTSCTS;
 			break;
-
-		case 1 ://使用硬件流控制
+		case HARDWARE_FLOW_CONTROL:
 			options.c_cflag |= CRTSCTS;
 			break;
-		case 2 ://使用软件流控制
+		case SOFTWARE_FLOW_CONTROL:
 			options.c_cflag |= IXON | IXOFF | IXANY;
 			break;
+		default:    //NO_FLOW_CONTROL
+			options.c_cflag &= ~CRTSCTS;
 	}
+
 	//设置数据位
-	//屏蔽其他标志位
 	options.c_cflag &= ~CSIZE;
-	switch (databits)
+	switch (dataBits)
 	{
-		case 5    :
+		case 5:
 			options.c_cflag |= CS5;
 			break;
-		case 6    :
+		case 6:
 			options.c_cflag |= CS6;
 			break;
-		case 7    :
+		case 7:
 			options.c_cflag |= CS7;
 			break;
 		case 8:
 			options.c_cflag |= CS8;
 			break;
-		default:
-			fprintf(stderr, "Unsupported data size\n");
-			return (FALSE);
+		default:    //8 data bits
+			options.c_cflag |= CS8;
 	}
+
 	//设置校验位
-	switch (parity)
+	switch (parityBit)
 	{
-		case 'n':
-		case 'N': //无奇偶校验位。
+		case NO_PARITY:
 			options.c_cflag &= ~PARENB;
 			options.c_iflag &= ~INPCK;
 			break;
-		case 'o':
-		case 'O'://设置为奇校验
+		case ODD_PARITY:
 			options.c_cflag |= (PARODD | PARENB);
 			options.c_iflag |= INPCK;
 			break;
-		case 'e':
-		case 'E'://设置为偶校验
+		case EVEN_PARITY:
 			options.c_cflag |= PARENB;
 			options.c_cflag &= ~PARODD;
 			options.c_iflag |= INPCK;
 			break;
-		case 's':
-		case 'S': //设置为空格
+		default:    //NO_PARITY
 			options.c_cflag &= ~PARENB;
-			options.c_cflag &= ~CSTOPB;
-			break;
-		default:
-			fprintf(stderr, "Unsupported parity\n");
-			return (FALSE);
+			options.c_iflag &= ~INPCK;
 	}
+
 	// 设置停止位
-	switch (stopbits)
+	switch (stopBit)
 	{
-		case 1:
+		case ONE_STOP_BIT:
 			options.c_cflag &= ~CSTOPB;
 			break;
-		case 2:
+		case TWO_STOP_BIT:
 			options.c_cflag |= CSTOPB;
 			break;
-		default:
-			fprintf(stderr, "Unsupported stop bits\n");
-			return (FALSE);
+		default:    //ONE_STOP_BIT
+			options.c_cflag &= ~CSTOPB;
 	}
 
 	//修改输出模式，原始数据输出
@@ -165,18 +132,31 @@ int UART0_Init(int fd, int speed, int flow_ctrl, int databits, int stopbits, int
 	//激活配置 (将修改后的termios数据设置到串口中）
 	if (tcsetattr(fd, TCSANOW, &options) != 0)
 	{
-		perror("com set error!\n");
-		return (FALSE);
+		LOGGER(Logger::ERROR, "Error setting terminal attribute", false);
+		return FAILURE;
 	}
-	return (TRUE);
+	return SUCCESS;
 }
 
-int UART0_Recv(int fd, char *rcv_buf, int data_len)
+int sendUartSerial(int fd, unsigned char *send_buf, int data_len)
 {
-	int len, fs_sel;
+	int len = write(fd, send_buf, data_len);
+	if (len == data_len)
+	{
+		return SUCCESS;
+	}
+	else
+	{
+		tcflush(fd, TCOFLUSH);
+		return FAILURE;
+	}
+}
+
+int receiveUartSerial(int fd, char *rcv_buf, int data_len)
+{
 	fd_set fs_read;
 
-	struct timeval time;
+	struct timeval time{};
 
 	FD_ZERO(&fs_read);
 	FD_SET(fd, &fs_read);
@@ -185,33 +165,17 @@ int UART0_Recv(int fd, char *rcv_buf, int data_len)
 	time.tv_usec = 0;
 
 	//使用select实现串口的多路通信
-	fs_sel = select(fd + 1, &fs_read, NULL, NULL, &time);
-	printf("fs_sel = %d\n", fs_sel);
-	if (fs_sel)
+	if (select(fd + 1, &fs_read, nullptr, nullptr, &time))
 	{
-		len = read(fd, rcv_buf, data_len);
-		return len;
+		if (read(fd, rcv_buf, data_len) == data_len)
+		{
+			return SUCCESS;
+		}
 	}
-	else
-	{
-		return -1;
-	}
+	return FAILURE;
 }
 
-int UART0_Send(int fd, unsigned char *send_buf, int data_len)
+void closeUartSerial(int fd)
 {
-	int len = 0;
-
-	len = write(fd, send_buf, data_len);
-	if (len == data_len)
-	{
-		//printf("send data is %s\n",send_buf);
-		return len;
-	}
-	else
-	{
-
-		tcflush(fd, TCOFLUSH);
-		return FALSE;
-	}
+	close(fd);
 }

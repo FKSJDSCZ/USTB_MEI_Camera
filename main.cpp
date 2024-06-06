@@ -9,9 +9,7 @@ std::atomic<int> interruptCount = 0;
 void signalHandler(int signal)
 {
 	interruptCount++;
-	std::string warning = std::format("Received signal {}", signal);
-	std::cerr << warning << std::endl;
-	LOGGER(Logger::WARNING, warning);
+	LOGGER(Logger::WARNING, std::format("Received signal {}", signal), true);
 	if (interruptCount >= MAX_INTERRUPT_COUNT)
 	{
 		exit(-1);
@@ -114,9 +112,8 @@ int main()
 	}
 	catch (std::exception &e)
 	{
-		std::cerr << "[Error] " << e.what() << std::endl;
-		LOGGER(Logger::ERROR, e.what());
+		LOGGER(Logger::ERROR, e.what(), true);
 	}
-	LOGGER(Logger::INFO, "Program exiting");
+	LOGGER(Logger::INFO, "Program exiting", false);
 	return ret;
 }

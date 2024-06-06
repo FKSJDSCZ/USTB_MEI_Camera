@@ -28,4 +28,6 @@ public:
 	void writeToBuffer(int startIndex, int dataNum, const int *inputData);
 
 	void sendData();
+
+	~DataSender();
 };
