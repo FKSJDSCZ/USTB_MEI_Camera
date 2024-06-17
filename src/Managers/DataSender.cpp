@@ -46,8 +46,7 @@ void DataSender::sendData()
 	}
 	data[WORDCOUNT * 2 + 1] = 0xbb;
 
-	int len = sendUartSerial(fd_, data, WORDCOUNT * 2 + 2);
-	if (len > 0)
+	if (sendUartSerial(fd_, data, WORDCOUNT * 2 + 2) == SUCCESS)
 	{
 		std::cout << "[Info] data:\t\t";
 		for (int i: dataBuffer_)

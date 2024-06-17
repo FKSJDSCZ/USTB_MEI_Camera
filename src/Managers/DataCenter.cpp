@@ -237,42 +237,56 @@ void DataCenter::drawFrontImage()
 
 void DataCenter::drawBackImage()
 {
+	cv::Mat *images[3] = {nullptr};
+	for (CameraImage &cameraImage: cameraImages_)
+	{
+		images[cameraImage.cameraId_] = &cameraImage.colorImage_;
+	}
+
 	for (int i = 0; i < backBalls_.size(); ++i)
 	{
 		Ball &tempBall = backBalls_.at(i);
 		for (const BallPosition &ballPosition: tempBall.ballPositions_)
 		{
-			cv::Mat &img = cameraImages_.at(ballPosition.cameraId_).colorImage_;
-
-			rectangle(img, ballPosition.graphRect_, RED, 2);
-			putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B " : " G ") + std::to_string(i),
-			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y),
-			        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
-			putText(img, "x: " + std::to_string(ballPosition.cameraPosition_.x).substr(0, 6),
-			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 12),
-			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
-			putText(img, "y: " + std::to_string(ballPosition.cameraPosition_.y).substr(0, 6),
-			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 24),
-			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
-			putText(img, "z: " + std::to_string(ballPosition.cameraPosition_.z).substr(0, 6),
-			        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 36),
-			        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+			if (images[ballPosition.cameraId_])
+			{
+				cv::Mat &img = *images[ballPosition.cameraId_];
+				rectangle(img, ballPosition.graphRect_, RED, 2);
+				putText(img, std::to_string(tempBall.labelNum_) + (tempBall.isInBasket_ ? " B " : " G ") + std::to_string(i),
+				        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y),
+				        cv::FONT_HERSHEY_SIMPLEX, 0.6, GREEN, 2);
+				putText(img, "x: " + std::to_string(ballPosition.cameraPosition_.x).substr(0, 6),
+				        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 12),
+				        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+				putText(img, "y: " + std::to_string(ballPosition.cameraPosition_.y).substr(0, 6),
+				        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 24),
+				        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+				putText(img, "z: " + std::to_string(ballPosition.cameraPosition_.z).substr(0, 6),
+				        cv::Point2i(ballPosition.graphRect_.x, ballPosition.graphRect_.y + 36),
+				        cv::FONT_HERSHEY_SIMPLEX, 0.4, GREEN, 1);
+			}
 		}
 	}
 	if (!backBalls_.empty())
 	{
 		for (const BallPosition &ballPosition: backBalls_.front().ballPositions_)
 		{
-			cv::Mat &img = cameraImages_.at(ballPosition.cameraId_).colorImage_;
-			rectangle(img, ballPosition.graphRect_, GREEN, 2);
+			if (images[ballPosition.cameraId_])
+			{
+				cv::Mat &img = *images[ballPosition.cameraId_];
+				rectangle(img, ballPosition.graphRect_, GREEN, 2);
+			}
 		}
 	}
 	if (backBalls_.size() >= 2)
 	{
 		for (const BallPosition &ballPosition: backBalls_.at(1).ballPositions_)
 		{
-			cv::Mat &img = cameraImages_.at(ballPosition.cameraId_).colorImage_;
-			rectangle(img, ballPosition.graphRect_, WHITE, 2);
+			if (images[ballPosition.cameraId_])
+			{
+				cv::Mat &img = *images[ballPosition.cameraId_];
+				rectangle(img, ballPosition.graphRect_, WHITE, 2);
+			}
 		}
 	}
 }

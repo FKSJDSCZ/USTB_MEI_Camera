@@ -10,9 +10,9 @@ class CameraManager
 private:
 	std::unordered_map<std::string, Parameters> paramsMap_ = {
 			{"318122303126",
-					Parameters(-210, -430, -30, -25, 0, 1.15)},
-			{"135122251159",
-					Parameters(240, -590, -50, -35, 0, 1.13)}
+					Parameters(-150, -400, 40, -25, 0, 1.15)},
+			{"318122301624",
+					Parameters(190, -490, 45, -35, 0, 1.13)}
 	};
 	const std::string frontCameraSerialNumber_ = "308222301027";
 

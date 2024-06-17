@@ -14,40 +14,50 @@ int RsCameraLoader::getFrameFromHardware(FrameData &frameData)
 	}
 }
 
-int RsCameraLoader::reconnect() try
+int RsCameraLoader::reconnect()
 {
 	int attemptCount = 0;
 	LOGGER(Logger::INFO, std::format("Started reconnecting realsense camera {}", serialNumber_), true);
 
-	while (true)
+	std::this_thread::sleep_for(std::chrono::seconds(3));
+
+	try
 	{
-		rs2::context context;
-		bool isAttached = false;
-		rs2::device_list deviceList = context.query_devices();
-		for (auto &&camera: deviceList)
+		while (true)
 		{
-			if (camera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) == serialNumber_)
+			rs2::context context;
+			bool isAttached = false;
+			rs2::device_list deviceList = context.query_devices();
+			for (auto &&camera: deviceList)
 			{
-				isAttached = true;
+				if (camera.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) == serialNumber_)
+				{
+					isAttached = true;
+					break;
+				}
+			}
+			attemptCount++;
+			if (isAttached)
+			{
+				LOGGER(Logger::INFO, std::format("Attempt {}: Realsense camera {} attached", attemptCount, serialNumber_), true);
 				break;
 			}
-		}
-		attemptCount++;
-		if (isAttached)
-		{
-			LOGGER(Logger::INFO, std::format("Attempt {}: Realsense camera {} attached", attemptCount, serialNumber_), true);
-			break;
-		}
-		else
-		{
-			LOGGER(Logger::WARNING, std::format("Attempt {}: Realsense camera {} not attached", attemptCount, serialNumber_), true);
-
-			if (attemptCount == MAX_RECONNECT_ATTEMPTS_COUNT)
+			else
 			{
-				return FAILURE;
+				LOGGER(Logger::WARNING, std::format("Attempt {}: Realsense camera {} not attached", attemptCount, serialNumber_), true);
+
+				if (attemptCount == MAX_RECONNECT_ATTEMPTS_COUNT)
+				{
+					return FAILURE;
+				}
 			}
+			std::this_thread::sleep_for(std::chrono::seconds(2));
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(2));
+	}
+	catch (std::exception &e)
+	{
+		LOGGER(Logger::ERROR, std::format("Error reconnect realsense camera {}: {}", serialNumber_, e.what()), true);
+		return FAILURE;
 	}
 
 	config_ = rs2::config();
@@ -56,10 +66,6 @@ int RsCameraLoader::reconnect() try
 	startPipe();
 	LOGGER(Logger::INFO, std::format("Realsense camera {} reconnected", serialNumber_), true);
 	return SUCCESS;
-}
-catch (std::exception &e)
-{
-	LOGGER(Logger::ERROR, std::format("Error reconnect realsense camera {}: {}", serialNumber_, e.what()), true);
 }
 
 RsCameraLoader::RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters,

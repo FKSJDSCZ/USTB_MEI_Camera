@@ -9,7 +9,7 @@ void MeiLogger::log(ILogger::Severity severity, const char *msg) noexcept
 {
 	if (severity <= severity_)
 	{
-		LOGGER(Logger::NO_TYPE, msg, true);
+		LOGGER(Logger::NO_TYPE, msg, false);
 	}
 }
 

@@ -21,7 +21,7 @@ void Logger::writeMsg(int infoType, const std::string &message, bool consoleIO)
 	tm *tm_ = localtime(&t);
 	auto now = std::chrono::system_clock::now();
 	auto ms = (std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000).count();
-	std::string info = std::format("[{}-{}-{} {}:{}:{}:{}]{} {}\n",
+	std::string info = std::format("[{}-{}-{} {}:{}:{}:{}]{} {}",
 	                               tm_->tm_year + 1900,
 	                               tm_->tm_mon + 1,
 	                               tm_->tm_mday,
@@ -35,7 +35,7 @@ void Logger::writeMsg(int infoType, const std::string &message, bool consoleIO)
 
 	if (outStream_.is_open())
 	{
-		outStream_ << info;
+		outStream_ << info << "\n";
 	}
 	if (consoleIO)
 	{
