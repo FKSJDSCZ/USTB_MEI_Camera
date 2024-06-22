@@ -7,6 +7,7 @@ set(WITH_CUDA ON)
 set(WITH_OPENVINO OFF)
 set(GRAPHIC_DEBUG ON)
 set(WITH_SERIAL OFF)
+set(SAVE_VIDEO ON)
 
 # realsense
 include_directories(/usr/include)
@@ -51,6 +52,10 @@ endif ()
 
 if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
+endif ()
+
+if (SAVE_VIDEO)
+    add_definitions(-DSAVE_VIDEO)
 endif ()
 
 # MEI

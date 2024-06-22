@@ -25,7 +25,10 @@ void VideoSaver::write(std::vector<CameraImage> &cameraImages)
 {
 	for (CameraImage &cameraImage: cameraImages)
 	{
-		videoWriters_.at(cameraImage.cameraId_).write(cameraImage.colorImage_);
+		if (cameraImage.cameraType_ == FRONT_CAMERA)
+		{
+			videoWriters_.at(cameraImage.cameraId_).write(cameraImage.colorImage_);
+		}
 	}
 }
 

@@ -112,6 +112,11 @@
 * **2024/6/6**
   * 串口相关函数优化
   * 日志与输出优化
+* **2024/6/17**
+  * DataCenter修正cameraImages_的索引逻辑错误
+  * RsCameraLoader优化reconnect异常处理逻辑
+* **2024/6/22**
+  * SAVE_VIDEO宏定义优化
 
 ## 使用说明
 

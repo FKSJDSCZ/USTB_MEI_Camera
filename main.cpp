@@ -56,7 +56,9 @@ int mainBody()
 #if defined(GRAPHIC_DEBUG)
 		videoSaver.show(dataCenter.cameraImages_);
 #endif
+#if defined(SAVE_VIDEO)
 		videoSaver.write(dataCenter.cameraImages_);
+#endif
 
 #if defined(GRAPHIC_DEBUG)
 		if (cv::waitKey(1) == 27)
