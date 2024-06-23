@@ -61,13 +61,14 @@ void Ball::addGraphPosition(float centerX, float centerY, float width, float hei
 	}
 }
 
-void Ball::setCameraPosition(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
+void Ball::setCameraPosition(std::vector<std::shared_ptr<ICameraLoader>> &cameras)
 {
 	isValid_ = false;
 
 	for (BallPosition &ballPosition: ballPositions_)
 	{
-		ballPosition.setCameraPosition(rsCameras.at(ballPosition.cameraId_)->getCameraPosition(ballPosition.graphCenter_));
+		std::shared_ptr<RsCameraLoader> RsCamera = std::static_pointer_cast<RsCameraLoader>(cameras.at(ballPosition.cameraId_));
+		ballPosition.setCameraPosition(RsCamera->getCameraPosition(ballPosition.graphCenter_));
 		isValid_ |= ballPosition.isValid_;
 	}
 }
@@ -80,11 +81,12 @@ void Ball::toMillimeter()
 	}
 }
 
-void Ball::offsetToEncodingDisk(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
+void Ball::offsetToEncodingDisk(std::vector<std::shared_ptr<ICameraLoader>> &cameras)
 {
 	for (BallPosition &ballPosition: ballPositions_)
 	{
-		ballPosition.offsetToEncodingDisk(rsCameras.at(ballPosition.cameraId_)->parameters_);
+		std::shared_ptr<RsCameraLoader> RsCamera = std::static_pointer_cast<RsCameraLoader>(cameras.at(ballPosition.cameraId_));
+		ballPosition.offsetToEncodingDisk(RsCamera->parameters_);
 	}
 }
 

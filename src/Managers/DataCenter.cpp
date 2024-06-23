@@ -14,7 +14,7 @@ void DataCenter::getBallData(IEngineLoader &engineLoader)
 	{
 		engineLoader.getBallsByCameraId(
 				cameraImage.cameraId_,
-				cameraImage.cameraType_ == FRONT_CAMERA ? frontBalls_ : backBalls_
+				cameraImage.cameraType_ & FRONT_CAMERA ? frontBalls_ : backBalls_
 		);
 	}
 }
@@ -25,18 +25,18 @@ void DataCenter::processFrontData()
 		return ball1.graphCenter().x < ball2.graphCenter().x;
 	});
 
-	//选出框 删除非框中球
+	//选出框，删除紫球
 	for (auto ballIt = frontBalls_.begin(); ballIt != frontBalls_.end();)
 	{
-		if (ballIt->labelNum_ == 3)
+		if (ballIt->labelNum_ == BASKET)
 		{
 			frontBaskets_.emplace_back(*(ballIt));
 			frontBalls_.erase(ballIt);
 		}
-//		else if (!detectedBalls_.at(*(pickedIt)).isInBasket_)
-//		{
-//			pickedBallsIndex_.erase(pickedIt);
-//		}
+		else if (ballIt->labelNum_ == PURPLE_BALL)
+		{
+			frontBalls_.erase(ballIt);
+		}
 		else
 		{
 			ballIt++;
@@ -74,20 +74,20 @@ void DataCenter::processFrontData()
 	}
 }
 
-void DataCenter::processBackData(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras)
+void DataCenter::processBackData(std::vector<std::shared_ptr<ICameraLoader>> &cameras)
 {
 	for (Ball &tempBall: backBalls_)
 	{
-		tempBall.setCameraPosition(rsCameras);
+		tempBall.setCameraPosition(cameras);
 		tempBall.toMillimeter();
-		tempBall.offsetToEncodingDisk(rsCameras);
+		tempBall.offsetToEncodingDisk(cameras);
 		tempBall.calcDistance();
 	}
 
 	//删除框内球、框和坐标无效的球
 	for (auto ballIt = backBalls_.begin(); ballIt != backBalls_.end();)
 	{
-		if (ballIt->isInBasket_ || ballIt->labelNum_ == 3 || !ballIt->isValid_)
+		if (ballIt->isInBasket_ || ballIt->labelNum_ == BASKET || !ballIt->isValid_)
 		{
 			backBalls_.erase(ballIt);
 		}
@@ -160,7 +160,7 @@ void DataCenter::setSenderBuffer(DataSender &dataSender)
 	if (backBalls_.size() >= 2)
 	{
 		Ball &tempBall = backBalls_.at(1);
-		if (tempBall.labelNum_ == 0 || tempBall.labelNum_ == 1)
+		if (tempBall.labelNum_ == RED_BALL || tempBall.labelNum_ == BLUE_BALL)
 		{
 			backData[4] = tempBall.cameraPosition().x;
 			backData[5] = tempBall.cameraPosition().y;
@@ -169,17 +169,9 @@ void DataCenter::setSenderBuffer(DataSender &dataSender)
 		}
 	}
 
-	int frontData[18];
-	std::fill(frontData, frontData + 18, 3);
-	if (frontBaskets_.size() == 1)
-	{
-		int ballCount = std::min(3, static_cast<int>(frontBaskets_.front().containedBalls_.size()));
-		for (int i = 0; i < ballCount; ++i)
-		{
-			frontData[15 + i] = frontLabel_[frontBaskets_.front().containedBalls_.at(i).labelNum_];
-		}
-	}
-	else if (frontBaskets_.size() == 5)
+	int frontData[15];
+	std::fill(frontData, frontData + 15, 3);
+	if (frontBaskets_.size() == 5)
 	{
 		for (int i = 0; i < 5; ++i)
 		{
@@ -198,14 +190,14 @@ void DataCenter::setSenderBuffer(DataSender &dataSender)
 
 	dataSender.writeToBuffer(1, 1, (int *) &haveBallInFront_);
 	dataSender.writeToBuffer(2, 8, backData);
-	dataSender.writeToBuffer(10, 18, frontData);
+	dataSender.writeToBuffer(10, 15, frontData);
 }
 
 void DataCenter::drawFrontImage()
 {
 	for (CameraImage &cameraImage: cameraImages_)
 	{
-		if (cameraImage.cameraType_ == FRONT_CAMERA)
+		if (cameraImage.cameraType_ & FRONT_CAMERA)
 		{
 			cv::Mat &img = cameraImage.colorImage_;
 

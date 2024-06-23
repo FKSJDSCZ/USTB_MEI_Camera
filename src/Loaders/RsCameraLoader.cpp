@@ -1,6 +1,6 @@
 #include "Loaders/RsCameraLoader.hpp"
 
-int RsCameraLoader::getFrameFromHardware(FrameData &frameData)
+int RsCameraLoader::getFrameFromHardware(RsFrameData &frameData)
 {
 	if (pipe_.try_wait_for_frames(&frameData.frameset_, RS_FRAME_TIME_OUT))
 	{
@@ -63,7 +63,7 @@ int RsCameraLoader::reconnect()
 	config_ = rs2::config();
 	pipe_ = rs2::pipeline();
 	init();
-	startPipe();
+	start();
 	LOGGER(Logger::INFO, std::format("Realsense camera {} reconnected", serialNumber_), true);
 	return SUCCESS;
 }
@@ -84,6 +84,16 @@ RsCameraLoader::RsCameraLoader(int cameraId, int cameraType, int imgWidth, int i
 			-std::sin(parameters_.yawAngle_ * CV_PI / 180), 0, std::cos(parameters_.yawAngle_ * CV_PI / 180));
 }
 
+int RsCameraLoader::cameraId()
+{
+	return cameraId_;
+}
+
+int RsCameraLoader::cameraType()
+{
+	return cameraType_;
+}
+
 void RsCameraLoader::init()
 {
 	config_.enable_device(serialNumber_);
@@ -91,7 +101,7 @@ void RsCameraLoader::init()
 	config_.enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
 }
 
-int RsCameraLoader::startPipe()
+int RsCameraLoader::start()
 {
 	pipe_.start(config_);
 	if (pipe_.try_wait_for_frames(&currentFrameSet_))
@@ -106,7 +116,7 @@ int RsCameraLoader::startPipe()
 
 void RsCameraLoader::updateFrame()
 {
-	FrameData frameData;
+	RsFrameData frameData;
 
 	while (isRunning_)
 	{
@@ -146,7 +156,7 @@ int RsCameraLoader::getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage)
 	{
 		while (true)
 		{
-			FrameData frameData = frameQueue_.front();
+			RsFrameData frameData = frameQueue_.front();
 			frameQueue_.pop();
 			if (frameData.timeStamp_ >= currentTimeStamp || frameQueue_.empty())
 			{
@@ -203,7 +213,7 @@ cv::Point3f RsCameraLoader::getCameraPosition(const cv::Point2f &graphCenter)
 	return {positionMatrix.at<float>(0), positionMatrix.at<float>(1), positionMatrix.at<float>(2)};
 }
 
-void RsCameraLoader::stopPipe()
+void RsCameraLoader::stop()
 {
 	isRunning_ = false;
 //	pipe_.stop();

@@ -5,7 +5,7 @@ void CameraManager::initRsCamera()
 	rs2::context context;
 	rs2::device_list deviceList = context.query_devices();
 
-	rsCameras_.reserve(3);
+	cameras_.reserve(3);
 
 	if (!deviceList.size())
 	{
@@ -27,23 +27,23 @@ void CameraManager::initRsCamera()
 		auto it = paramsMap_.find(serialNumber);
 		if (serialNumber == frontCameraSerialNumber_)
 		{
-			rsCameras_.push_back(
+			cameras_.push_back(
 					std::make_shared<RsCameraLoader>(
-							cameraCount_, FRONT_CAMERA, 640, 480, 30, Parameters(), serialNumber
+							cameraCount_, FRONT_RS_CAMERA, 640, 480, 30, Parameters(), serialNumber
 					)
 			);
-			rsCameras_.back()->init();
-			rsCameras_.back()->startPipe();
+			cameras_.back()->init();
+			cameras_.back()->start();
 		}
 		else if (it != paramsMap_.end())
 		{
-			rsCameras_.push_back(
+			cameras_.push_back(
 					std::make_shared<RsCameraLoader>(
 							cameraCount_, BACK_CAMERA, 640, 480, 30, it->second, serialNumber
 					)
 			);
-			rsCameras_.back()->init();
-			rsCameras_.back()->startPipe();
+			cameras_.back()->init();
+			cameras_.back()->start();
 		}
 		else
 		{
@@ -60,11 +60,62 @@ void CameraManager::initRsCamera()
 	}
 }
 
+void CameraManager::initWFCamera()
+{
+	int index = 0;
+	std::string info;
+	v4l2_capability cap{};
+	struct stat statInfo{};
+	struct group *group_;
+
+	while (index <= 20)
+	{
+		std::string cameraFilePath = "/dev/video" + std::to_string(index);
+
+		if (stat(cameraFilePath.c_str(), &statInfo) == -1)
+		{
+			index += 2;
+			continue;
+		}
+		group_ = getgrgid(statInfo.st_gid);
+		if (std::string(group_->gr_name) != "video")
+		{
+			index += 2;
+			continue;
+		}
+
+		int fd = open(cameraFilePath.c_str(), O_RDONLY);
+		ioctl(fd, VIDIOC_QUERYCAP, &cap);
+		close(fd);
+
+		info = std::string(reinterpret_cast<char *>(cap.card));
+		break;
+	}
+
+	if (info.empty())
+	{
+		throw std::runtime_error("No wide field camera detected");
+	}
+	else
+	{
+		cameras_.push_back(
+				std::make_shared<WideFieldCameraLoader>(
+						cameraCount_, FRONT_WF_CAMERA, index
+				)
+		);
+		cameras_.back()->init();
+		cameras_.back()->start();
+
+		LOGGER(Logger::INFO, std::format("Wide field camera {}({}) connected", info, cameraCount_), true);
+		cameraCount_++;
+	}
+}
+
 void CameraManager::startUpdateThread()
 {
-	for (auto &rsCamera: rsCameras_)
+	for (auto &camera: cameras_)
 	{
-		std::thread thread(&RsCameraLoader::updateFrame, rsCamera);
+		std::thread thread(&ICameraLoader::updateFrame, camera);
 		thread.detach();
 	}
 }
@@ -76,21 +127,20 @@ void CameraManager::getCameraImage(std::vector<CameraImage> &cameraImages)
 	cv::Mat colorImage;
 
 	long currentTimeStamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	for (auto &rsCamera: rsCameras_)
+	for (auto &camera: cameras_)
 	{
-		status = rsCamera->getCurrentFrame(currentTimeStamp, colorImage);
-		if (status == SUCCESS)
+		if (camera->getCurrentFrame(currentTimeStamp, colorImage) == SUCCESS)
 		{
-			cameraImages.emplace_back(rsCamera->cameraId_, rsCamera->cameraType_, colorImage);
+			cameraImages.emplace_back(camera->cameraId(), camera->cameraType(), colorImage);
 		}
 	}
 }
 
 void CameraManager::stopUpdateThread()
 {
-	for (auto &rsCamera: rsCameras_)
+	for (auto &camera: cameras_)
 	{
-		rsCamera->stopPipe();
+		camera->stop();
 	}
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 }

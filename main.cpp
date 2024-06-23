@@ -24,7 +24,8 @@ int mainBody()
 	auto dataSender = DataSender(0);
 
 	CameraManager cameraManager;
-	cameraManager.initRsCamera();
+//	cameraManager.initRsCamera();
+	cameraManager.initWFCamera();
 
 	DataCenter dataCenter;
 
@@ -46,7 +47,7 @@ int mainBody()
 		engineLoader.postProcess();
 		dataCenter.getBallData(engineLoader);
 		dataCenter.processFrontData();
-		dataCenter.processBackData(cameraManager.rsCameras_);
+		dataCenter.processBackData(cameraManager.cameras_);
 		dataCenter.setSenderBuffer(dataSender);
 #if defined(WITH_SERIAL)
 		dataSender.sendData();

@@ -117,6 +117,13 @@
   * RsCameraLoader优化reconnect异常处理逻辑
 * **2024/6/22**
   * SAVE_VIDEO宏定义优化
+* **2024/6/24**
+  * 添加多线程版本的WideFieldCameraLoader
+  * 添加ICameraLoader接口便于CameraManager管理
+  * CameraManager添加检测单目相机的逻辑
+  * DataCenter处理前场信息时去除紫球，删除识别一个框和球作为近框决策的逻辑
+  * 其他与ICameraLoader接口相关的优化
+  * 类型定义优化、命名优化和输出优化
 
 ## 使用说明
 

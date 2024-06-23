@@ -2,8 +2,11 @@
 
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <grp.h>
+#include <fcntl.h>
 #include "Loaders/RsCameraLoader.hpp"
+#include "Loaders/WideFieldCameraLoader.hpp"
 
 class CameraManager
 {
@@ -22,9 +25,11 @@ private:
 
 public:
 	int cameraCount_ = 0;
-	std::vector<std::shared_ptr<RsCameraLoader>> rsCameras_;
+	std::vector<std::shared_ptr<ICameraLoader>> cameras_;
 
 	void initRsCamera();
+
+	void initWFCamera();
 
 	void startUpdateThread();
 

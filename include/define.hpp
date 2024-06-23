@@ -18,10 +18,15 @@
 #define MAX_RECONNECT_ATTEMPTS_COUNT              5
 #define MAX_INTERRUPT_COUNT                                3
 
-struct FrameData
+struct RsFrameData
 {
 	long timeStamp_{};
 	rs2::frameset frameset_;
+};
+struct CvFrameData
+{
+	long timeStamp_{};
+	cv::Mat frame_;
 };
 
 struct CameraImage
@@ -55,12 +60,15 @@ enum StatusCode
 {
 	FAILURE = -1,
 	SUCCESS = 0,
-	NO_FRAME = 1,
-	TIME_OUT = 2,
+	EMPTY_FRAME = 1,
+	NO_FRAME = 2,
+	TIME_OUT = 3,
 };
 
 enum CameraType
 {
-	FRONT_CAMERA = 0,
-	BACK_CAMERA = 1,
+	FRONT_RS_CAMERA = 1 << 0,
+	FRONT_WF_CAMERA = 1 << 1,
+	BACK_CAMERA = 1 << 2,
+	FRONT_CAMERA = FRONT_RS_CAMERA | FRONT_WF_CAMERA,
 };

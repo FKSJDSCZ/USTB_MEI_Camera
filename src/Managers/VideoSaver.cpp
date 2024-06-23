@@ -2,14 +2,28 @@
 
 void VideoSaver::start(CameraManager &cameraManager)
 {
-	for (auto &rsCamera: cameraManager.rsCameras_)
+	for (auto &camera: cameraManager.cameras_)
 	{
-		videoWriters_.push_back(
-				cv::VideoWriter(
-						"../videos/RS" + rsCamera->serialNumber_ + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
-						rsCamera->framerate_, {rsCamera->imgWidth_, rsCamera->imgHeight_}
-				)
-		);
+		if (camera->cameraType() & FRONT_WF_CAMERA)
+		{
+			std::shared_ptr<WideFieldCameraLoader> WfCamera = std::static_pointer_cast<WideFieldCameraLoader>(camera);
+			videoWriters_.push_back(
+					cv::VideoWriter(
+							"../videos/video" + std::to_string(WfCamera->devIndex_) + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
+							WfCamera->framerate_, {WfCamera->imgWidth_, WfCamera->imgHeight_}
+					)
+			);
+		}
+		else
+		{
+			std::shared_ptr<RsCameraLoader> RsCamera = std::static_pointer_cast<RsCameraLoader>(camera);
+			videoWriters_.push_back(
+					cv::VideoWriter(
+							"../videos/RS_" + RsCamera->serialNumber_ + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
+							RsCamera->framerate_, {RsCamera->imgWidth_, RsCamera->imgHeight_}
+					)
+			);
+		}
 	}
 }
 
@@ -25,7 +39,7 @@ void VideoSaver::write(std::vector<CameraImage> &cameraImages)
 {
 	for (CameraImage &cameraImage: cameraImages)
 	{
-		if (cameraImage.cameraType_ == FRONT_CAMERA)
+		if (cameraImage.cameraType_ & FRONT_CAMERA)
 		{
 			videoWriters_.at(cameraImage.cameraId_).write(cameraImage.colorImage_);
 		}

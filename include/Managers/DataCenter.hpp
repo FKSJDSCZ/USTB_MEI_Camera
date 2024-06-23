@@ -12,19 +12,26 @@ class DataCenter
 private:
 	enum PriorityTag
 	{
+		RED_BALL_PRIORITY = 0,
+		BLUE_BALL_PRIORITY = 1,
+		PURPLE_BALL_PRIORITY = 2,
+		BASKET_PRIORITY = 3,
+	};
+	enum OriginalLabel
+	{
 		RED_BALL = 0,
 		BLUE_BALL = 1,
 		PURPLE_BALL = 2,
-		BASKET = 3
+		BASKET = 3,
 	};
-	enum FrontLabel
+	enum FrontLabelToSend
 	{
+		FRONT_BASKET = 0,
 		FRONT_RED_BALL = 1,
 		FRONT_BLUE_BALL = 2,
 		FRONT_PURPLE_BALL = 3,
-		FRONT_BASKET = 4,
 	};
-	enum BackLabel
+	enum BackLabelToSend
 	{
 		BACK_PURPLE_BALL = 0,
 		BACK_RED_BALL = 1,
@@ -33,22 +40,22 @@ private:
 	};
 
 	int ballPriority_[4] = {
-			RED_BALL,
-			BLUE_BALL,
-			PURPLE_BALL,
-			BASKET
+			RED_BALL_PRIORITY,
+			BLUE_BALL_PRIORITY,
+			PURPLE_BALL_PRIORITY,
+			BASKET_PRIORITY,
 	};
 	int frontLabel_[4] = {
 			FRONT_RED_BALL,
 			FRONT_BLUE_BALL,
 			FRONT_PURPLE_BALL,
-			FRONT_BASKET
+			FRONT_BASKET,
 	};
 	int backLabel_[4] = {
 			BACK_RED_BALL,
 			BACK_BLUE_BALL,
 			BACK_PURPLE_BALL,
-			BACK_BASKET
+			BACK_BASKET,
 	};
 	bool haveBallInFront_ = false;
 
@@ -64,7 +71,7 @@ public:
 
 	void processFrontData();
 
-	void processBackData(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
+	void processBackData(std::vector<std::shared_ptr<ICameraLoader>> &cameras);
 
 	void setSenderBuffer(DataSender &dataSender);
 

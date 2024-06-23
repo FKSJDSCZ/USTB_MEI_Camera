@@ -26,11 +26,11 @@ public:
 
 	void addGraphPosition(float centerX, float centerY, float width, float height, float confidence, int labelNum, int cameraId, bool isInBasket);
 
-	void setCameraPosition(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
+	void setCameraPosition(std::vector<std::shared_ptr<ICameraLoader>> &cameras);
 
 	void toMillimeter();
 
-	void offsetToEncodingDisk(std::vector<std::shared_ptr<RsCameraLoader>> &rsCameras);
+	void offsetToEncodingDisk(std::vector<std::shared_ptr<ICameraLoader>> &cameras);
 
 	void calcDistance();
 };

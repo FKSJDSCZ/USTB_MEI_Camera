@@ -1,16 +1,14 @@
 #pragma once
 
-#include <thread>
-#include <queue>
-#include <atomic>
-#include <mutex>
+#include "Loaders/ICameraLoader.hpp"
 #include "Entity/Parameters.hpp"
 
 
-class RsCameraLoader
+class RsCameraLoader :
+		public ICameraLoader
 {
 private:
-	int getFrameFromHardware(FrameData &frameData);
+	int getFrameFromHardware(RsFrameData &frameData);
 
 	int reconnect();
 
@@ -40,7 +38,7 @@ private:
 	rs2::frameset currentFrameSet_;
 
 	std::mutex queueMutex_;
-	std::queue<FrameData> frameQueue_;
+	std::queue<RsFrameData> frameQueue_;
 
 public:
 	int cameraId_;
@@ -54,15 +52,19 @@ public:
 
 	RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters, std::string serialNumber);
 
-	void init();
+	int cameraId() override;
 
-	int startPipe();
+	int cameraType() override;
 
-	void updateFrame();
+	void init() override;
 
-	int getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage);
+	int start() override;
+
+	void updateFrame() override;
+
+	int getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage) override;
 
 	cv::Point3f getCameraPosition(const cv::Point2f &graphCenter);
 
-	void stopPipe();
+	void stop() override;
 };
