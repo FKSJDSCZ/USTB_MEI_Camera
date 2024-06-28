@@ -3,8 +3,8 @@
 #if defined(WITH_CUDA)
 
 #include <fstream>
+#include <NvInferPlugin.h>
 #include "torch/torch.h"
-#include "torchvision/ops/nms.h"
 #include "cvcuda/OpStack.hpp"
 #include "cvcuda/OpResize.hpp"
 #include "cvcuda/OpCvtColor.hpp"
@@ -44,7 +44,10 @@ private:
 	cvcuda::CopyMakeBorder copyMakeBorder_;
 	cvcuda::Reformat reformat_;
 	//buffers
-	float *gpuOutputBuffer_;
+	int *numDetBuffer_;
+	float *detBoxesBuffer_;
+	float *detScoresBuffer_;
+	int *detClassesBuffer_;
 	//parameters
 	int inputImageHeight_ = 480;
 	int inputImageWidth_ = 640;
@@ -53,15 +56,10 @@ private:
 	int offsetX_;
 	int offsetY_;
 	int batchSize_;
-	int classNum_;
 	int inputSize_;
-	int outputSize_;
 	int inputTensorSize_;
-	int outputTensorSize_;
-	float imgRatio_;
-	int outputMaxNum_;
-	float minConfidence_;
-	float maxIou_;
+	float imageScale_;
+	int maxOutputNumber_;
 	//vectors
 	std::vector<std::vector<Ball>> detectedBalls_;
 
@@ -72,7 +70,7 @@ private:
 	void initBuffers();
 
 public:
-	explicit TrtEngineLoader(std::string enginePath, int batchSize, float minConfidence, float maxIou);
+	explicit TrtEngineLoader(std::string enginePath, int batchSize);
 
 	void setInput(cv::Mat &BGRImage, int imageId) override;
 

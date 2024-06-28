@@ -1,4 +1,5 @@
 #include <csignal>
+#include <dlfcn.h>
 #include "Loaders/TrtEngineLoader.hpp"
 #include "Managers/DataCenter.hpp"
 #include "Managers/CameraManager.hpp"
@@ -18,21 +19,23 @@ void signalHandler(int signal)
 
 int mainBody()
 {
+	dlopen("libtorch_cuda.so", RTLD_NOW);
+
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
 
 	auto dataSender = DataSender(0);
 
 	CameraManager cameraManager;
-//	cameraManager.initRsCamera();
-	cameraManager.initWFCamera();
+	cameraManager.initRsCamera();
+//	cameraManager.initWFCamera();
 
 	DataCenter dataCenter;
 
 	VideoSaver videoSaver;
 	videoSaver.start(cameraManager);
 
-	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-best.engine", cameraManager.cameraCount_, 0.5, 0.4);
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-nms-best.engine", cameraManager.cameraCount_);
 
 	cameraManager.startUpdateThread();
 

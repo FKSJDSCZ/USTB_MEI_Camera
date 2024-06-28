@@ -13,7 +13,7 @@
 #define ROBOT_WIDTH_LIMIT                                   275.0f
 #define RADIUS                                                       95.0f
 
-#define RS_FRAME_TIME_OUT                                   100
+#define RS_FRAME_TIME_OUT                                   800
 #define MAX_FRAME_QUEUE_SIZE                              5
 #define MAX_RECONNECT_ATTEMPTS_COUNT              5
 #define MAX_INTERRUPT_COUNT                                3

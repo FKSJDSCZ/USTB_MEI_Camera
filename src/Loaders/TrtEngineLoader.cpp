@@ -26,8 +26,8 @@ void TrtEngineLoader::loadEngine(std::string &enginePath)
 
 void TrtEngineLoader::setInOutputSize()
 {
-	//以本项目所用模型为例，输入(-)1*3*640*640（NCHW）
-	//其中1为batch，3为通道数，两个640依次为矩阵的高和宽
+	///以本项目所用模型为例，输入batchSize*3*640*640（NCHW）
+	///其中3为通道数，两个640依次为矩阵的高和宽
 	auto inputDims = cudaEngine_->getTensorShape("images");
 	if (inputDims.d[0] != -1)
 	{
@@ -38,13 +38,11 @@ void TrtEngineLoader::setInOutputSize()
 	inputSize_ = inputDims.d[1] * inputLayerHeight_ * inputLayerWidth_;
 	inputTensorSize_ = batchSize_ * inputSize_;
 
-	//以本项目所用模型为例，输出(-)1*11*34000（NHW）
-	//其中1为batch，11为：centerX, centerY, width, height, clsConf0, clsConf1, ...，25200为先验框数量
-	auto outputDims = cudaEngine_->getTensorShape("output0");
-	classNum_ = outputDims.d[1] - 4;
-	outputMaxNum_ = outputDims.d[2];
-	outputSize_ = outputDims.d[1] * outputMaxNum_;
-	outputTensorSize_ = batchSize_ * outputSize_;
+	///以本项目所用模型（YOLO8-p2）为例，输出batchSize*11*34000（NHW）
+	///其中11为：centerX, centerY, width, height, clsConf0, clsConf1, ...，25200为先验框数量
+	///加上TensorRT EfficientNMS Plugin后，输出分为四个部分
+	auto detectedBoxesDims = cudaEngine_->getTensorShape("det_boxes");
+	maxOutputNumber_ = detectedBoxesDims.d[1];
 }
 
 void TrtEngineLoader::initBuffers()
@@ -52,14 +50,17 @@ void TrtEngineLoader::initBuffers()
 	setInOutputSize();
 
 	//letterbox
-	imgRatio_ = std::min((inputLayerWidth_ * 1.) / inputImageWidth_, (inputLayerHeight_ * 1.) / inputImageHeight_);
-	int borderWidth = inputImageWidth_ * imgRatio_;
-	int borderHeight = inputImageHeight_ * imgRatio_;
+	imageScale_ = std::min((inputLayerWidth_ * 1.) / inputImageWidth_, (inputLayerHeight_ * 1.) / inputImageHeight_);
+	int borderWidth = inputImageWidth_ * imageScale_;
+	int borderHeight = inputImageHeight_ * imageScale_;
 	offsetX_ = (inputLayerWidth_ - borderWidth) / 2;
 	offsetY_ = (inputLayerHeight_ - borderHeight) / 2;
 
 	cudaStreamCreate(&meiCudaStream_);
-	cudaMalloc(&gpuOutputBuffer_, outputTensorSize_ * sizeof(float));
+	cudaMalloc(&numDetBuffer_, batchSize_ * 1 * sizeof(int));
+	cudaMalloc(&detBoxesBuffer_, batchSize_ * maxOutputNumber_ * 4 * sizeof(float));
+	cudaMalloc(&detScoresBuffer_, batchSize_ * maxOutputNumber_ * sizeof(float));
+	cudaMalloc(&detClassesBuffer_, batchSize_ * maxOutputNumber_ * sizeof(int));
 
 	//imageBatch
 	imageBatch_ = nvcv::TensorBatch(batchSize_);
@@ -80,14 +81,17 @@ void TrtEngineLoader::initBuffers()
 
 	executionContext_->setInputShape("images", nvinfer1::Dims4{batchSize_, 3, inputLayerWidth_, inputLayerHeight_});
 	executionContext_->setTensorAddress("images", inputTensor_.exportData<nvcv::TensorDataStridedCuda>()->basePtr());
-	executionContext_->setTensorAddress("output0", gpuOutputBuffer_);
+	executionContext_->setTensorAddress("num_dets", numDetBuffer_);
+	executionContext_->setTensorAddress("det_boxes", detBoxesBuffer_);
+	executionContext_->setTensorAddress("det_scores", detScoresBuffer_);
+	executionContext_->setTensorAddress("det_classes", detClassesBuffer_);
 
 	detectedBalls_.insert(detectedBalls_.begin(), batchSize_, {});
 }
 
-TrtEngineLoader::TrtEngineLoader(std::string enginePath, int batchSize, float minConfidence, float maxIou) :
-		batchSize_(batchSize), minConfidence_(minConfidence), maxIou_(maxIou)
+TrtEngineLoader::TrtEngineLoader(std::string enginePath, int batchSize) : batchSize_(batchSize)
 {
+	initLibNvInferPlugins(&trtLogger, "");
 	loadEngine(enginePath);
 	initBuffers();
 }
@@ -128,12 +132,13 @@ void TrtEngineLoader::preProcess()
 	convertTo_(meiCudaStream_, borderImageTensor_, normalizedImageTensor_, 1.0 / 255.0, 0);
 	//reformat(NHWC -> NCHW)
 	reformat_(meiCudaStream_, normalizedImageTensor_, inputTensor_);
+	cudaStreamSynchronize(meiCudaStream_);
 }
 
 void TrtEngineLoader::infer()
 {
 	executionContext_->enqueueV3(meiCudaStream_);
-	cudaStreamSynchronize(meiCudaStream_);//wait for asynchronous inference
+	cudaStreamSynchronize(meiCudaStream_);
 }
 
 void TrtEngineLoader::postProcess()
@@ -143,64 +148,51 @@ void TrtEngineLoader::postProcess()
 		detectedBalls_.at(i).clear();
 	}
 
-	torch::Tensor rawData;
-	torch::Tensor ballData;
-	torch::Tensor classConfData;
-	torch::Tensor maxConfData;
-	torch::Tensor mask;
-	torch::Tensor classIndexData;
-	torch::Tensor filteredIndex;
+	torch::Tensor detectNumbers;
+	torch::Tensor detectBoxes;
+	torch::Tensor detectScores;
+	torch::Tensor detectClasses;
 	torch::Tensor basketTag;
 
-	rawData = torch::from_blob(gpuOutputBuffer_, {(classNum_ + 4) * batchSize_, outputMaxNum_}, torch::dtype(torch::kFloat).device(torch::kCUDA));
+	detectNumbers = torch::from_blob(numDetBuffer_, {batchSize_, 1}, torch::dtype(torch::kInt32).device(torch::kCUDA));
+	detectBoxes = torch::from_blob(detBoxesBuffer_, {batchSize_ * maxOutputNumber_, 4}, torch::dtype(torch::kFloat).device(torch::kCUDA));
+	detectScores = torch::from_blob(detScoresBuffer_, {batchSize_, maxOutputNumber_}, torch::dtype(torch::kFloat).device(torch::kCUDA));
+	detectClasses = torch::from_blob(detClassesBuffer_, {batchSize_, maxOutputNumber_}, torch::dtype(torch::kInt32).device(torch::kCUDA));
+
+	detectBoxes.slice(1, 2, 3) = (detectBoxes.slice(1, 2, 3) - detectBoxes.slice(1, 0, 1)) / imageScale_;
+	detectBoxes.slice(1, 3, 4) = (detectBoxes.slice(1, 3, 4) - detectBoxes.slice(1, 1, 2)) / imageScale_;
+	detectBoxes.slice(1, 0, 1) = (detectBoxes.slice(1, 0, 1) - offsetX_) / imageScale_ + detectBoxes.slice(1, 2, 3) / 2;
+	detectBoxes.slice(1, 1, 2) = (detectBoxes.slice(1, 1, 2) - offsetY_) / imageScale_ + detectBoxes.slice(1, 3, 4) / 2;
+
+	basketTag = detectClasses % 2 == 1;
+	detectClasses = (detectClasses / 2).to(torch::kInt32);
+
+	detectNumbers = detectNumbers.to(torch::kCPU);
+	detectBoxes = detectBoxes.to(torch::kCPU);
+	detectScores = detectScores.to(torch::kCPU);
+	detectClasses = detectClasses.to(torch::kCPU);
+	basketTag = basketTag.to(torch::kCPU);
+
+	auto detectNumbersAccess = detectNumbers.accessor<int, 2>();
+	auto detectBoxesAccess = detectBoxes.accessor<float, 2>();
+	auto detectScoresAccess = detectScores.accessor<float, 2>();
+	auto detectClassesAccess = detectClasses.accessor<int, 2>();
+	auto basketTagAccess = basketTag.accessor<bool, 2>();
+
 	for (int batchSize = 0; batchSize < batchSize_; ++batchSize)
 	{
-		//NMS
-		ballData = rawData.slice(0, (classNum_ + 4) * batchSize, (classNum_ + 4) * batchSize + 4);
-		ballData = ballData.transpose(0, 1);
-		classConfData = rawData.slice(0, (classNum_ + 4) * batchSize + 4, (classNum_ + 4) * (batchSize + 1));
-
-		std::tuple<torch::Tensor, torch::Tensor> maxInfo = classConfData.max(0);
-		maxConfData = std::get<0>(maxInfo);
-		classIndexData = std::get<1>(maxInfo);
-
-		mask = maxConfData >= minConfidence_;
-		ballData = ballData.index({mask});
-		maxConfData = maxConfData.index({mask});
-		classIndexData = classIndexData.index({mask});
-
-		ballData.slice(1, 2, 3) += ballData.slice(1, 0, 1);
-		ballData.slice(1, 3, 4) += ballData.slice(1, 1, 2);
-
-		filteredIndex = vision::ops::nms(ballData, maxConfData, 0.4);
-
-		ballData = ballData.index({filteredIndex});
-		maxConfData = maxConfData.index({filteredIndex});
-		classIndexData = classIndexData.index({filteredIndex});
-
-		ballData.slice(1, 2, 3) = (ballData.slice(1, 2, 3) - ballData.slice(1, 0, 1)) / imgRatio_;
-		ballData.slice(1, 3, 4) = (ballData.slice(1, 3, 4) - ballData.slice(1, 1, 2)) / imgRatio_;
-		ballData.slice(1, 0, 1) = (ballData.slice(1, 0, 1) - offsetX_) / imgRatio_;
-		ballData.slice(1, 1, 2) = (ballData.slice(1, 1, 2) - offsetY_) / imgRatio_;
-		basketTag = classIndexData % 2 == 1;
-		classIndexData = (classIndexData / 2).to(torch::kLong);
-
-		ballData = ballData.to(torch::kCPU);
-		maxConfData = maxConfData.to(torch::kCPU);
-		classIndexData = classIndexData.to(torch::kCPU);
-		basketTag = basketTag.to(torch::kCPU);
-
-		auto ballDataAccess = ballData.accessor<float, 2>();
-		auto maxConfDataAccess = maxConfData.accessor<float, 1>();
-		auto classIndexDataAccess = classIndexData.accessor<long, 1>();
-		auto basketTagAccess = basketTag.accessor<bool, 1>();
-
-		for (int ballCount = 0; ballCount < ballData.size(0); ++ballCount)
+		for (int index = 0; index < detectNumbersAccess[batchSize][0]; ++index)
 		{
 			Ball ball;
 			ball.addGraphPosition(
-					ballDataAccess[ballCount][0], ballDataAccess[ballCount][1], ballDataAccess[ballCount][2], ballDataAccess[ballCount][3],
-					maxConfDataAccess[ballCount], classIndexDataAccess[ballCount], batchSize, basketTagAccess[ballCount]
+					detectBoxesAccess[batchSize * maxOutputNumber_ + index][0],
+					detectBoxesAccess[batchSize * maxOutputNumber_ + index][1],
+					detectBoxesAccess[batchSize * maxOutputNumber_ + index][2],
+					detectBoxesAccess[batchSize * maxOutputNumber_ + index][3],
+					detectScoresAccess[batchSize][index],
+					detectClassesAccess[batchSize][index],
+					batchSize,
+					basketTagAccess[batchSize][index]
 			);
 			detectedBalls_.at(batchSize).push_back(ball);
 		}
@@ -223,7 +215,10 @@ void TrtEngineLoader::getBallsByCameraId(int cameraId, std::vector<Ball> &contai
 TrtEngineLoader::~TrtEngineLoader()
 {
 	cudaStreamDestroy(meiCudaStream_);
-	cudaFree(gpuOutputBuffer_);
+	cudaFree(numDetBuffer_);
+	cudaFree(detBoxesBuffer_);
+	cudaFree(detScoresBuffer_);
+	cudaFree(detClassesBuffer_);
 }
 
 #endif

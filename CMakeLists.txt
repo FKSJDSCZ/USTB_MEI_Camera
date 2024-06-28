@@ -19,6 +19,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 if (WITH_CUDA)
     # cuda & cudnn
     include_directories(/usr/local/cuda/include)
+    file(GLOB CUDA_LIBS /usr/local/cuda/lib64/*.so)
     # tensorrt
     include_directories(/home/ywh/TensorRT-8.6.1.6/include)
     file(GLOB TENSORRT_LIBS /home/ywh/TensorRT-8.6.1.6/lib/*.so)
@@ -68,6 +69,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
+        ${CMAKE_DL_LIBS}
         ${OpenCV_LIBS}
         realsense2
         pthread
@@ -75,7 +77,7 @@ target_link_libraries(${PROJECT_NAME}
 
 if (WITH_CUDA)
     target_link_libraries(${PROJECT_NAME}
-            cudart
+            ${CUDA_LIBS}
             ${TENSORRT_LIBS}
             ${CVCUDA_LIBS}
             ${TORCH_LIBS}

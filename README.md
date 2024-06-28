@@ -124,6 +124,8 @@
   * DataCenter处理前场信息时去除紫球，删除识别一个框和球作为近框决策的逻辑
   * 其他与ICameraLoader接口相关的优化
   * 类型定义优化、命名优化和输出优化
+* **2024/6/28**
+  * 修改TrtEngineLoader，适配带有TensorRT Efficient NMS Plugin的模型
 
 ## 使用说明
 
