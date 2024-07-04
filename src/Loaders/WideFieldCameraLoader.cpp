@@ -22,15 +22,16 @@ int WideFieldCameraLoader::reconnect()
 
 }
 
-WideFieldCameraLoader::WideFieldCameraLoader(int cameraId, int cameraType, int devIndex) :
-		cameraId_(cameraId), cameraType_(cameraType), devIndex_(devIndex)
+WideFieldCameraLoader::WideFieldCameraLoader(int cameraId, int cameraType, int imageWidth, int imageHeight, int framerate, int devIndex) :
+		cameraId_(cameraId), cameraType_(cameraType), imageWidth_(imageWidth), imageHeight_(imageHeight), framerate_(framerate), devIndex_(devIndex)
 {}
 
 void WideFieldCameraLoader::init()
 {
 	cap_ = cv::VideoCapture(200 + devIndex_);
-//	cap_.set(cv::CAP_PROP_FRAME_WIDTH, imgWidth_);
-//	cap_.set(cv::CAP_PROP_FRAME_HEIGHT, imgHeight_);
+	cap_.set(cv::CAP_PROP_FRAME_WIDTH, imageWidth_);
+	cap_.set(cv::CAP_PROP_FRAME_HEIGHT, imageHeight_);
+	cap_.set(cv::CAP_PROP_FPS, framerate_);
 }
 
 int WideFieldCameraLoader::start()
@@ -114,4 +115,14 @@ int WideFieldCameraLoader::cameraId()
 int WideFieldCameraLoader::cameraType()
 {
 	return cameraType_;
+}
+
+int WideFieldCameraLoader::imageWidth()
+{
+	return imageWidth_;
+}
+
+int WideFieldCameraLoader::imageHeight()
+{
+	return imageHeight_;
 }

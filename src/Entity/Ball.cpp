@@ -45,7 +45,10 @@ void Ball::merge(Ball &ball)
 	if (ball.confidence_ > confidence_)
 	{
 		confidence_ = ball.confidence_;
-		labelNum_ = ball.labelNum_;
+		if (labelNum_ != PURPLE_BALL)
+		{
+			labelNum_ = ball.labelNum_;
+		}
 		isInBasket_ = ball.isInBasket_;
 	}
 }

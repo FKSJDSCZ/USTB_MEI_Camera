@@ -10,5 +10,5 @@ public:
 
 	static float calcDistance3f(cv::Point3f cameraPosition1, cv::Point3f cameraPosition2 = cv::Point3f(0, 0, 0));
 
-	static float calcDistance2f(cv::Point2f pixelPosition1, cv::Point2f pixelPosition2 = cv::Point2f(0, 0));
+	static float calcDistanceXZ(cv::Point3f position1, cv::Point3f position2 = cv::Point3f(0, 0, 0));
 };

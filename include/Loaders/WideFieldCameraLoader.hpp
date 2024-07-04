@@ -18,17 +18,21 @@ private:
 public:
 	int cameraId_;
 	int cameraType_;
-	int imgWidth_ = 640;
-	int imgHeight_ = 480;
-	int framerate_ = 30;
+	int imageWidth_;
+	int imageHeight_;
+	int framerate_;
 	bool isRunning_ = true;
 	int devIndex_;
 
-	explicit WideFieldCameraLoader(int cameraId, int cameraType, int devIndex);
+	explicit WideFieldCameraLoader(int cameraId, int cameraType, int devIndex, int imageWidth, int imageHeight, int framerate);
 
 	int cameraId() override;
 
 	int cameraType() override;
+
+	int imageWidth() override;
+
+	int imageHeight() override;
 
 	void init() override;
 

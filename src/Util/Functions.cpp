@@ -14,7 +14,7 @@ float Functions::calcDistance3f(cv::Point3f cameraPosition1, cv::Point3f cameraP
 	                 + pow(cameraPosition1.z - cameraPosition2.z, 2));
 }
 
-float Functions::calcDistance2f(cv::Point2f pixelPosition1, cv::Point2f pixelPosition2)
+float Functions::calcDistanceXZ(cv::Point3f position1, cv::Point3f position2)
 {
-	return std::sqrt(pow(pixelPosition1.x - pixelPosition2.x, 2) + pow(pixelPosition1.y - pixelPosition2.y, 2));
+	return std::sqrt(pow(position1.x - position2.x, 2) + pow(position1.z - position2.z, 2));
 }

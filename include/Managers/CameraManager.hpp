@@ -14,11 +14,11 @@ private:
 	std::unordered_map<std::string, Parameters> paramsMap_ = {
 			{
 					"318122303126",
-					Parameters(-150, -400, 40, -25, 0, 1.15)
+					Parameters(-150, -400, -35, -25, 0, 1.15)
 			},
 			{
 					"318122301624",
-					Parameters(190, -490, 45, -35, 0, 1.13)
+					Parameters(190, -490, -55, -35, 0, 1.13)
 			}
 	};
 	const std::string frontCameraSerialNumber_ = "308222301027";

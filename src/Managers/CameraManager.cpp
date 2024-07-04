@@ -29,7 +29,7 @@ void CameraManager::initRsCamera()
 		{
 			cameras_.push_back(
 					std::make_shared<RsCameraLoader>(
-							cameraCount_, FRONT_RS_CAMERA, 640, 480, 30, Parameters(), serialNumber
+							cameraCount_, FRONT_RS_CAMERA, 1280, 720, 30, Parameters(), serialNumber
 					)
 			);
 			cameras_.back()->init();
@@ -39,7 +39,7 @@ void CameraManager::initRsCamera()
 		{
 			cameras_.push_back(
 					std::make_shared<RsCameraLoader>(
-							cameraCount_, BACK_CAMERA, 640, 480, 30, it->second, serialNumber
+							cameraCount_, BACK_CAMERA, 1280, 720, 30, it->second, serialNumber
 					)
 			);
 			cameras_.back()->init();
@@ -100,7 +100,7 @@ void CameraManager::initWFCamera()
 	{
 		cameras_.push_back(
 				std::make_shared<WideFieldCameraLoader>(
-						cameraCount_, FRONT_WF_CAMERA, index
+						cameraCount_, FRONT_WF_CAMERA, 1280, 720, 30, index
 				)
 		);
 		cameras_.back()->init();

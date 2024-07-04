@@ -9,8 +9,6 @@ class IEngineLoader
 public:
 	virtual void setInput(cv::Mat &BGRImage, int imageId) = 0;
 
-	virtual void setInput(uint8_t *rawInput, int imageId) = 0;
-
 	virtual void preProcess() = 0;
 
 	virtual void infer() = 0;

@@ -1,8 +1,8 @@
 #include "Managers/VideoSaver.hpp"
 
-void VideoSaver::start(CameraManager &cameraManager)
+void VideoSaver::start(std::vector<std::shared_ptr<ICameraLoader>> &cameras)
 {
-	for (auto &camera: cameraManager.cameras_)
+	for (auto &camera: cameras)
 	{
 		if (camera->cameraType() & FRONT_WF_CAMERA)
 		{
@@ -10,7 +10,7 @@ void VideoSaver::start(CameraManager &cameraManager)
 			videoWriters_.push_back(
 					cv::VideoWriter(
 							"../videos/video" + std::to_string(WfCamera->devIndex_) + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
-							WfCamera->framerate_, {WfCamera->imgWidth_, WfCamera->imgHeight_}
+							WfCamera->framerate_, {WfCamera->imageWidth_, WfCamera->imageHeight_}
 					)
 			);
 		}
@@ -20,7 +20,7 @@ void VideoSaver::start(CameraManager &cameraManager)
 			videoWriters_.push_back(
 					cv::VideoWriter(
 							"../videos/RS_" + RsCamera->serialNumber_ + ".mp4", cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
-							RsCamera->framerate_, {RsCamera->imgWidth_, RsCamera->imgHeight_}
+							RsCamera->framerate_, {RsCamera->imageWidth_, RsCamera->imageHeight_}
 					)
 			);
 		}
@@ -39,10 +39,7 @@ void VideoSaver::write(std::vector<CameraImage> &cameraImages)
 {
 	for (CameraImage &cameraImage: cameraImages)
 	{
-		if (cameraImage.cameraType_ & FRONT_CAMERA)
-		{
-			videoWriters_.at(cameraImage.cameraId_).write(cameraImage.colorImage_);
-		}
+		videoWriters_.at(cameraImage.cameraId_).write(cameraImage.colorImage_);
 	}
 }
 

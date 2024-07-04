@@ -15,6 +15,10 @@ public:
 
 	virtual int cameraType() = 0;
 
+	virtual int imageWidth() = 0;
+
+	virtual int imageHeight() = 0;
+
 	virtual void init() = 0;
 
 	virtual int start() = 0;

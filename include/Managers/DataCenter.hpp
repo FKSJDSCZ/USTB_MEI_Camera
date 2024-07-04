@@ -17,13 +17,6 @@ private:
 		PURPLE_BALL_PRIORITY = 2,
 		BASKET_PRIORITY = 3,
 	};
-	enum OriginalLabel
-	{
-		RED_BALL = 0,
-		BLUE_BALL = 1,
-		PURPLE_BALL = 2,
-		BASKET = 3,
-	};
 	enum FrontLabelToSend
 	{
 		FRONT_BASKET = 0,
@@ -33,10 +26,10 @@ private:
 	};
 	enum BackLabelToSend
 	{
-		BACK_PURPLE_BALL = 0,
+		BACK_BASKET = 0,
 		BACK_RED_BALL = 1,
 		BACK_BLUE_BALL = 2,
-		BACK_BASKET = 3,
+		BACK_PURPLE_BALL = 3,
 	};
 
 	int ballPriority_[4] = {
@@ -64,8 +57,6 @@ public:
 	std::vector<Ball> frontBalls_;
 	std::vector<Ball> backBalls_;
 	std::vector<Basket> frontBaskets_;
-
-	void setInput(IEngineLoader &engineLoader);
 
 	void getBallData(IEngineLoader &engineLoader);
 

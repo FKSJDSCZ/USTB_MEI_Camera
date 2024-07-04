@@ -126,6 +126,11 @@
   * 类型定义优化、命名优化和输出优化
 * **2024/6/28**
   * 修改TrtEngineLoader，适配带有TensorRT Efficient NMS Plugin的模型
+* **2024/7/4**
+  * TrtEngineLoader预处理修改，适配不同大小的图像输入
+  * TrtEngineLoader后处理优化
+  * Ball修改merge方法
+  *
 
 ## 使用说明
 

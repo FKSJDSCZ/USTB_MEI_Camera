@@ -7,7 +7,6 @@ set(WITH_CUDA ON)
 set(WITH_OPENVINO OFF)
 set(GRAPHIC_DEBUG ON)
 set(WITH_SERIAL OFF)
-set(SAVE_VIDEO ON)
 
 # realsense
 include_directories(/usr/include)
@@ -27,12 +26,12 @@ if (WITH_CUDA)
     include_directories(/home/ywh/cvcuda/include)
     file(GLOB CVCUDA_LIBS /home/ywh/cvcuda/lib/x86_64-linux-gnu/*.so)
     # libtorch
-    include_directories(/home/ywh/libtorch/include)
-    include_directories(/home/ywh/libtorch/include/torch/csrc/api/include)
-    file(GLOB TORCH_LIBS /home/ywh/libtorch/lib/*.so)
+    #    include_directories(/home/ywh/libtorch/include)
+    #    include_directories(/home/ywh/libtorch/include/torch/csrc/api/include)
+    #    file(GLOB TORCH_LIBS /home/ywh/libtorch/lib/*.so)
     # torchvision
-    include_directories(/home/ywh/torchvision/include)
-    file(GLOB TORCHVISION_LIBS /home/ywh/torchvision/lib/*.so)
+    #    include_directories(/home/ywh/torchvision/include)
+    #    file(GLOB TORCHVISION_LIBS /home/ywh/torchvision/lib/*.so)
     # add definition
     add_definitions(-DWITH_CUDA)
     message("Using cuda")
@@ -55,10 +54,6 @@ if (WITH_SERIAL)
     add_definitions(-DWITH_SERIAL)
 endif ()
 
-if (SAVE_VIDEO)
-    add_definitions(-DSAVE_VIDEO)
-endif ()
-
 # MEI
 include_directories(include)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
@@ -66,10 +61,10 @@ add_executable(${PROJECT_NAME}
         ${SRC_FILES}
         main.cpp
         #        test.cpp
+        #        rename.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
-        ${CMAKE_DL_LIBS}
         ${OpenCV_LIBS}
         realsense2
         pthread
@@ -80,8 +75,8 @@ if (WITH_CUDA)
             ${CUDA_LIBS}
             ${TENSORRT_LIBS}
             ${CVCUDA_LIBS}
-            ${TORCH_LIBS}
-            ${TORCHVISION_LIBS}
+            #            ${TORCH_LIBS}
+            #            ${TORCHVISION_LIBS}
     )
 elseif (WITH_OPENVINO)
     target_link_libraries(${PROJECT_NAME}

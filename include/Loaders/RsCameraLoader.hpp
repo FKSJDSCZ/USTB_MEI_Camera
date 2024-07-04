@@ -43,8 +43,8 @@ private:
 public:
 	int cameraId_;
 	int cameraType_;
-	int imgWidth_;
-	int imgHeight_;
+	int imageWidth_;
+	int imageHeight_;
 	int framerate_;
 	bool isRunning_ = true;
 	Parameters parameters_;
@@ -55,6 +55,10 @@ public:
 	int cameraId() override;
 
 	int cameraType() override;
+
+	int imageWidth() override;
+
+	int imageHeight() override;
 
 	void init() override;
 

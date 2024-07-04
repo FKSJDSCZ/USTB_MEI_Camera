@@ -4,7 +4,6 @@
 
 #include <fstream>
 #include <NvInferPlugin.h>
-#include "torch/torch.h"
 #include "cvcuda/OpStack.hpp"
 #include "cvcuda/OpResize.hpp"
 #include "cvcuda/OpCvtColor.hpp"
@@ -12,7 +11,6 @@
 #include "cvcuda/OpCopyMakeBorder.hpp"
 #include "cvcuda/OpReformat.hpp"
 #include "cvcuda/OpNonMaximumSuppression.hpp"
-#include "nvcv/Tensor.hpp"
 #include "nvcv/TensorBatch.hpp"
 #include "nvcv/TensorDataAccess.hpp"
 #include "IEngineLoader.hpp"
@@ -27,54 +25,61 @@ private:
 	std::unique_ptr<nvinfer1::ICudaEngine> cudaEngine_ = nullptr;
 	std::unique_ptr<nvinfer1::IExecutionContext> executionContext_ = nullptr;
 	cudaStream_t meiCudaStream_;
+
 	//nvcv components
-	nvcv::TensorBatch imageBatch_;
-	nvcv::Tensor imageTensor_;
+	std::vector<nvcv::Tensor> imageTensors_;
+	std::vector<nvcv::Tensor> resizedImageTensors_;
+	std::vector<nvcv::Tensor> rgbImageTensors_;
+	std::vector<nvcv::Tensor> borderImageTensors_;
+	std::vector<nvcv::Tensor> normalizedImageTensors_;
+	std::vector<nvcv::Tensor> reformattedImageTensors_;
+	nvcv::TensorBatch inputTensorBatch_;
 	nvcv::Tensor inputTensor_;
 
-	nvcv::Tensor resizedImageTensor_;
-	nvcv::Tensor rgbImageTensor_;
-	nvcv::Tensor borderImageTensor_;
-	nvcv::Tensor normalizedImageTensor_;
 	//cvcuda operators
-	cvcuda::Stack stack_;
 	cvcuda::Resize resize_;
 	cvcuda::CvtColor cvtColor_;
-	cvcuda::ConvertTo convertTo_;
 	cvcuda::CopyMakeBorder copyMakeBorder_;
+	cvcuda::ConvertTo convertTo_;
 	cvcuda::Reformat reformat_;
-	//buffers
+	cvcuda::Stack stack_;
+
+	//buffers for GPU
 	int *numDetBuffer_;
 	float *detBoxesBuffer_;
 	float *detScoresBuffer_;
 	int *detClassesBuffer_;
+
+	//buffers for CPU
+	int *cpuNumDetBuffer_;
+	float *cpuDetBoxesBuffer_;
+	float *cpuDetScoresBuffer_;
+	int *cpuDetClassesBuffer_;
+
 	//parameters
-	int inputImageHeight_ = 480;
-	int inputImageWidth_ = 640;
+	std::vector<LetterboxParameter> letterboxParameters_;
+	std::vector<std::vector<Ball>> detectedBalls_;
 	int inputLayerHeight_;
 	int inputLayerWidth_;
-	int offsetX_;
-	int offsetY_;
 	int batchSize_;
 	int inputSize_;
 	int inputTensorSize_;
-	float imageScale_;
 	int maxOutputNumber_;
-	//vectors
-	std::vector<std::vector<Ball>> detectedBalls_;
 
 	void loadEngine(std::string &enginePath);
 
 	void setInOutputSize();
 
-	void initBuffers();
-
 public:
 	explicit TrtEngineLoader(std::string enginePath, int batchSize);
 
-	void setInput(cv::Mat &BGRImage, int imageId) override;
+	void setLetterboxParameters(std::vector<std::shared_ptr<ICameraLoader>> &cameras);
 
-	void setInput(uint8_t *rawInput, int imageId) override;
+	void init();
+
+	void setInput(std::vector<CameraImage> &cameraImages);
+
+	void setInput(cv::Mat &BGRImage, int imageId) override;
 
 	void preProcess() override;
 

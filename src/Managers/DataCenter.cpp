@@ -1,13 +1,5 @@
 #include "Managers/DataCenter.hpp"
 
-void DataCenter::setInput(IEngineLoader &engineLoader)
-{
-	for (CameraImage &cameraImage: cameraImages_)
-	{
-		engineLoader.setInput(cameraImage.colorImage_, cameraImage.cameraId_);
-	}
-}
-
 void DataCenter::getBallData(IEngineLoader &engineLoader)
 {
 	for (CameraImage &cameraImage: cameraImages_)
@@ -113,7 +105,7 @@ void DataCenter::processBackData(std::vector<std::shared_ptr<ICameraLoader>> &ca
 		auto firstIt = lastIt++;
 		while (lastIt != backBalls_.end())
 		{
-			if (Functions::calcDistance3f(firstIt->cameraPosition(), lastIt->cameraPosition()) < 1.5 * RADIUS)
+			if (Functions::calcDistanceXZ(firstIt->cameraPosition(), lastIt->cameraPosition()) < RADIUS)
 			{
 				firstIt->merge(*lastIt);
 				backBalls_.erase(lastIt);

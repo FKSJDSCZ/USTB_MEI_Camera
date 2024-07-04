@@ -1,5 +1,4 @@
 #include <csignal>
-#include <dlfcn.h>
 #include "Loaders/TrtEngineLoader.hpp"
 #include "Managers/DataCenter.hpp"
 #include "Managers/CameraManager.hpp"
@@ -19,23 +18,23 @@ void signalHandler(int signal)
 
 int mainBody()
 {
-	dlopen("libtorch_cuda.so", RTLD_NOW);
-
 	std::ios::sync_with_stdio(false);
 	std::cout.tie(nullptr);
 
 	auto dataSender = DataSender(0);
 
 	CameraManager cameraManager;
-	cameraManager.initRsCamera();
-//	cameraManager.initWFCamera();
+//	cameraManager.initRsCamera();
+	cameraManager.initWFCamera();
 
 	DataCenter dataCenter;
 
 	VideoSaver videoSaver;
-	videoSaver.start(cameraManager);
+	videoSaver.start(cameraManager.cameras_);
 
-	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-dynamic-nms-best.engine", cameraManager.cameraCount_);
+	TrtEngineLoader engineLoader = TrtEngineLoader("yolov8s-p2-dynamic-nms-0.5conf-best.engine", cameraManager.cameraCount_);
+	engineLoader.setLetterboxParameters(cameraManager.cameras_);
+	engineLoader.init();
 
 	cameraManager.startUpdateThread();
 
@@ -44,7 +43,7 @@ int mainBody()
 		dataCenter.clearAll();
 
 		cameraManager.getCameraImage(dataCenter.cameraImages_);
-		dataCenter.setInput(engineLoader);
+		engineLoader.setInput(dataCenter.cameraImages_);
 		engineLoader.preProcess();
 		engineLoader.infer();
 		engineLoader.postProcess();
@@ -60,9 +59,7 @@ int mainBody()
 #if defined(GRAPHIC_DEBUG)
 		videoSaver.show(dataCenter.cameraImages_);
 #endif
-#if defined(SAVE_VIDEO)
-		videoSaver.write(dataCenter.cameraImages_);
-#endif
+//		videoSaver.write(dataCenter.cameraImages_);
 
 #if defined(GRAPHIC_DEBUG)
 		if (cv::waitKey(1) == 27)

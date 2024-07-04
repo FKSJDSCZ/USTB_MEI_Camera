@@ -10,7 +10,7 @@ private:
 	std::vector<cv::VideoWriter> videoWriters_;
 
 public:
-	void start(CameraManager &cameraManager);
+	void start(std::vector<std::shared_ptr<ICameraLoader>> &cameras);
 
 	void show(std::vector<CameraImage> &cameraImages);
 

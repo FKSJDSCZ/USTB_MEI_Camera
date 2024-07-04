@@ -70,7 +70,7 @@ int RsCameraLoader::reconnect()
 
 RsCameraLoader::RsCameraLoader(int cameraId, int cameraType, int imgWidth, int imgHeight, int framerate, Parameters parameters,
                                std::string serialNumber) :
-		cameraId_(cameraId), cameraType_(cameraType), imgWidth_(imgWidth), imgHeight_(imgHeight), framerate_(framerate), parameters_(parameters),
+		cameraId_(cameraId), cameraType_(cameraType), imageWidth_(imgWidth), imageHeight_(imgHeight), framerate_(framerate), parameters_(parameters),
 		serialNumber_(std::move(serialNumber))
 {
 	pitchRotateMatrix_ = (cv::Mat_<float>(3, 3) <<
@@ -94,11 +94,21 @@ int RsCameraLoader::cameraType()
 	return cameraType_;
 }
 
+int RsCameraLoader::imageWidth()
+{
+	return imageWidth_;
+}
+
+int RsCameraLoader::imageHeight()
+{
+	return imageHeight_;
+}
+
 void RsCameraLoader::init()
 {
 	config_.enable_device(serialNumber_);
-	config_.enable_stream(RS2_STREAM_COLOR, imgWidth_, imgHeight_, RS2_FORMAT_BGR8, framerate_);
-	config_.enable_stream(RS2_STREAM_DEPTH, imgWidth_, imgHeight_, RS2_FORMAT_Z16, framerate_);
+	config_.enable_stream(RS2_STREAM_COLOR, imageWidth_, imageHeight_, RS2_FORMAT_BGR8, framerate_);
+	config_.enable_stream(RS2_STREAM_DEPTH, imageWidth_, imageHeight_, RS2_FORMAT_Z16, framerate_);
 }
 
 int RsCameraLoader::start()
@@ -161,7 +171,8 @@ int RsCameraLoader::getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage)
 			if (frameData.timeStamp_ >= currentTimeStamp || frameQueue_.empty())
 			{
 				currentFrameSet_ = frameData.frameset_;
-				colorImage = cv::Mat({imgWidth_, imgHeight_}, CV_8UC3, (void *) frameData.frameset_.get_color_frame().get_data(), cv::Mat::AUTO_STEP);
+				colorImage =
+						cv::Mat({imageWidth_, imageHeight_}, CV_8UC3, (void *) frameData.frameset_.get_color_frame().get_data(), cv::Mat::AUTO_STEP);
 				break;
 			}
 			else if (frameQueue_.front().timeStamp_ >= currentTimeStamp)
@@ -169,13 +180,13 @@ int RsCameraLoader::getCurrentFrame(long currentTimeStamp, cv::Mat &colorImage)
 				if (currentTimeStamp - frameData.timeStamp_ >= frameQueue_.front().timeStamp_ - currentTimeStamp)
 				{
 					currentFrameSet_ = frameQueue_.front().frameset_;
-					colorImage = cv::Mat({imgWidth_, imgHeight_}, CV_8UC3,
+					colorImage = cv::Mat({imageWidth_, imageHeight_}, CV_8UC3,
 					                     (void *) frameQueue_.front().frameset_.get_color_frame().get_data(), cv::Mat::AUTO_STEP);
 				}
 				else
 				{
 					currentFrameSet_ = frameData.frameset_;
-					colorImage = cv::Mat({imgWidth_, imgHeight_}, CV_8UC3,
+					colorImage = cv::Mat({imageWidth_, imageHeight_}, CV_8UC3,
 					                     (void *) frameData.frameset_.get_color_frame().get_data(), cv::Mat::AUTO_STEP);
 				}
 				break;
@@ -193,7 +204,7 @@ cv::Point3f RsCameraLoader::getCameraPosition(const cv::Point2f &graphCenter)
 
 	//邻近采样防止深度黑洞
 	float position[3];
-	cv::Rect2i imgRect = cv::Rect2i(0, 0, imgWidth_, imgHeight_);
+	cv::Rect2i imgRect = cv::Rect2i(0, 0, imageWidth_, imageHeight_);
 	for (auto &offset: pixelOffset_)
 	{
 		float point[2] = {graphCenter.x + offset[0], graphCenter.y + offset[1]};

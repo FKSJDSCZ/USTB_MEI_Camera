@@ -36,6 +36,25 @@ struct CameraImage
 	cv::Mat colorImage_;
 };
 
+struct LetterboxParameter
+{
+	int imageWidth_;
+	int imageHeight_;
+	int resizedWidth_;
+	int resizedHeight_;
+	int offsetX_;
+	int offsetY_;
+	float imageScale_;
+};
+
+enum OriginalLabel
+{
+	RED_BALL = 0,
+	BLUE_BALL = 1,
+	PURPLE_BALL = 2,
+	BASKET = 3,
+};
+
 enum FlowControlFlag
 {
 	NO_FLOW_CONTROL = 0,
